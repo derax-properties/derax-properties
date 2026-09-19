@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { SellPropertyWizard } from "./SellPropertyWizard";
+
+const PODIO_WEBFORM_URL = "https://podio.com/webforms/30844013/2624806";
 
 export const metadata: Metadata = {
   title: "Sell Your Property",
@@ -27,9 +28,26 @@ export default function SellYourPropertyPage() {
           </p>
         </div>
 
-        <div className="mt-10">
-          <SellPropertyWizard />
+        <div className="mx-auto mt-10 max-w-2xl overflow-hidden rounded-2xl bg-white shadow-card">
+          <iframe
+            src={PODIO_WEBFORM_URL}
+            title="Sell Your Property"
+            className="h-[1400px] w-full border-0"
+            loading="lazy"
+          />
         </div>
+        <p className="mx-auto mt-4 max-w-2xl text-center text-xs text-ink/40">
+          Having trouble with the form above?{" "}
+          <a
+            href={PODIO_WEBFORM_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-semibold text-gold-dark underline"
+          >
+            Open it in a new tab
+          </a>
+          .
+        </p>
       </div>
     </section>
   );

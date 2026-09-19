@@ -25,19 +25,21 @@ export default function AboutPage() {
         <div className="mx-auto max-w-3xl px-4 py-16 text-ink/70 sm:px-6 lg:px-8">
           <p className="text-lg leading-relaxed">
             Derax Properties is a real estate investment company focused on creating
-            straightforward solutions for property owners while providing investors with access
-            to real estate opportunities.
+            straightforward solutions for property owners and pursuing real estate investment
+            opportunities.
           </p>
           <p className="mt-6 leading-relaxed">
-            We work with homeowners, investors, buyers, and real estate professionals to identify
-            opportunities and create practical solutions around properties that may require a
-            different approach — distressed, off-market, pre-foreclosure, tax-delinquent, vacant,
-            or otherwise unwanted properties.
+            We work directly with homeowners, investors, buyers, and real estate professionals to
+            identify and evaluate properties that may require a different approach — including
+            distressed, off-market, pre-foreclosure, tax-delinquent, vacant, or otherwise unwanted
+            properties.
           </p>
           <p className="mt-6 leading-relaxed">
-            Our approach is based on transparency, honest communication, and long-term
-            relationships. We evaluate every property individually, and we work to make the
-            process as simple as possible for everyone we work with.
+            We evaluate each property individually and may acquire properties directly, enter
+            into purchase agreements, or assign contractual interests when appropriate. Our
+            approach is based on transparency, honest communication, and long-term relationships.
+            We work to make the process as simple and straightforward as possible for everyone
+            involved.
           </p>
         </div>
       </section>

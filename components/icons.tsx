@@ -89,6 +89,27 @@ export function ArrowRightIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function MapPinIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M12 21s7-6.1 7-11.5A7 7 0 0 0 5 9.5C5 14.9 12 21 12 21Z" />
+      <circle cx="12" cy="9.5" r="2.5" />
+    </svg>
+  );
+}
+
+export function SupportIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M4 13v-1a8 8 0 0 1 16 0v1" />
+      <rect x="2.5" y="13" width="4" height="6" rx="1.5" />
+      <rect x="17.5" y="13" width="4" height="6" rx="1.5" />
+      <path d="M19.5 19v.5a3 3 0 0 1-3 3H13" />
+      <path d="M11 22.5h2a1 1 0 0 0 0-2h-2a1 1 0 0 0 0 2Z" />
+    </svg>
+  );
+}
+
 export function CircleArrowIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg {...base} {...props}>

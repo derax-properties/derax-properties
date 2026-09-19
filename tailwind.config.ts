@@ -22,6 +22,11 @@ const config: Config = {
           light: "#e0c584",
           dark: "#a9812f",
         },
+        forest: {
+          DEFAULT: "#173a2e",
+          light: "#22503f",
+          dark: "#0f2921",
+        },
       },
       fontFamily: {
         display: ["var(--font-playfair)", "Georgia", "serif"],
