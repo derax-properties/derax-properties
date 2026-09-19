@@ -74,13 +74,18 @@ export async function POST(request: Request, { params }: { params: { id: string 
 
     if (uploadError) throw uploadError;
 
-    const table = kind === "photo" ? "seller_property_photos" : "seller_documents";
-    const insertPayload =
+    const { error: insertError } =
       kind === "photo"
-        ? { submission_id: submissionId, storage_path: storagePath }
-        : { submission_id: submissionId, storage_path: storagePath, document_type: file.type };
-
-    const { error: insertError } = await supabase.from(table).insert(insertPayload);
+        ? await supabase
+            .from("seller_property_photos")
+            .insert({ submission_id: submissionId, storage_path: storagePath })
+        : await supabase
+            .from("seller_documents")
+            .insert({
+              submission_id: submissionId,
+              storage_path: storagePath,
+              document_type: file.type,
+            });
     if (insertError) throw insertError;
 
     return NextResponse.json({ success: true, path: storagePath });
