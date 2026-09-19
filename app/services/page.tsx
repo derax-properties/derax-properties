@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import { ServiceCard } from "@/components/ServiceCard";
 import { CTASection } from "@/components/CTASection";
-import { HouseIcon, HandshakeIcon, TrendUpIcon } from "@/components/icons";
+import { HouseIcon, CoinsIcon, TrendUpIcon, HandshakeIcon } from "@/components/icons";
 
 export const metadata: Metadata = {
   title: "Services",
   description:
-    "Property acquisition, wholesaling, and investment opportunities from Derax Properties.",
+    "Derax Properties buys houses directly — cash offers, fast closings, and investment opportunities nationwide.",
 };
 
 export default function ServicesPage() {
@@ -18,12 +18,12 @@ export default function ServicesPage() {
             Our Services
           </p>
           <h1 className="mt-4 max-w-2xl font-display text-3xl font-semibold text-cream text-balance sm:text-4xl lg:text-5xl">
-            We Make Real Estate Simple, Profitable &amp; Stress-Free.
+            We Buy Houses Directly. No Middleman, No Hassle.
           </h1>
           <p className="mt-5 max-w-xl text-cream/60">
-            Whether you&apos;re an investor looking for your next deal, a homeowner needing a
-            fast solution, or a buyer searching for a great property, Derax Properties is your
-            trusted partner in real estate.
+            Whether you need a fast, guaranteed sale on your property or you&apos;re an investor
+            looking for your next deal, Derax Properties buys directly and closes on your
+            timeline.
           </p>
         </div>
       </section>
@@ -32,18 +32,23 @@ export default function ServicesPage() {
         <div className="mx-auto flex max-w-content flex-col gap-5 px-4 py-16 sm:px-6 lg:px-8">
           <ServiceCard
             icon={<HouseIcon className="h-8 w-8" />}
-            title="Property Acquisition"
-            description="We find and negotiate distressed, pre-foreclosure, tax delinquent, and off-market properties."
+            title="We Buy Houses"
+            description="In most cases, we purchase your property directly with cash — no bank financing to wait on, no showings, no middleman between you and the sale."
           />
           <ServiceCard
-            icon={<HandshakeIcon className="h-8 w-8" />}
-            title="Wholesaling"
-            description="We connect motivated sellers with serious cash buyers for win-win deals."
+            icon={<CoinsIcon className="h-8 w-8" />}
+            title="Fast, Fair Cash Offers"
+            description="We evaluate distressed, pre-foreclosure, tax-delinquent, and off-market properties quickly and present a straightforward, no-obligation offer — often within days."
           />
           <ServiceCard
             icon={<TrendUpIcon className="h-8 w-8" />}
             title="Investment Opportunities"
             description="Gain access to high-potential properties with strong returns and long-term value."
+          />
+          <ServiceCard
+            icon={<HandshakeIcon className="h-8 w-8" />}
+            title="Flexible Closing Options"
+            description="Every property is different. In select situations where it puts more money in your pocket or gets you a faster close, we work with a trusted network of investors to structure the right solution — always with your outcome as the priority."
           />
         </div>
       </section>

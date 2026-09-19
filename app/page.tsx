@@ -36,13 +36,13 @@ async function getFeaturedProperties(): Promise<Property[]> {
 const SERVICES = [
   {
     icon: <CoinsIcon className="h-7 w-7" />,
-    title: "Property Acquisition",
-    description: "We find and negotiate distressed properties.",
+    title: "We Buy Houses",
+    description: "In most cases, we purchase your property directly — cash, no middleman.",
   },
   {
     icon: <HandshakeIcon className="h-7 w-7" />,
-    title: "Wholesaling",
-    description: "We connect motivated sellers with cash buyers.",
+    title: "Fast, Fair Offers",
+    description: "A straightforward, no-obligation offer, often within days.",
   },
   {
     icon: <TrendUpIcon className="h-7 w-7" />,
