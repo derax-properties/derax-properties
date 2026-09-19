@@ -1,8 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { DeraxMark } from "@/components/DeraxMark";
 
 const NAV = [
   { href: "/", label: "Home" },
@@ -40,20 +40,11 @@ export function Footer() {
         <div className="grid gap-10 md:grid-cols-4">
           <div>
             <div className="flex items-center gap-3">
-              <span className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full">
-                <span className="absolute inset-0 -z-10 rounded-full bg-gold/40 blur-md" aria-hidden />
-                <Image
-                  src="/logo.png"
-                  alt="Derax Properties"
-                  width={96}
-                  height={96}
-                  className="h-full w-full rounded-full object-cover ring-2 ring-gold shadow-[0_0_16px_rgba(201,162,75,0.6)]"
-                />
-              </span>
+              <DeraxMark className="h-12 w-12 shrink-0" />
               <div className="flex flex-col leading-none">
                 <span className="font-display text-xl font-bold text-cream">DERAX</span>
                 <span className="text-[10px] font-semibold tracking-[0.35em] text-gold">
-                  PROPERTIES
+                  REAL ESTATE
                 </span>
               </div>
             </div>

@@ -28,13 +28,13 @@ export function Header() {
           className="focus-gold group flex items-center gap-3"
           onClick={() => setOpen(false)}
         >
-          <DeraxMark className="h-10 w-10 shrink-0 sm:h-11 sm:w-11" />
+          <DeraxMark className="h-10 w-10 shrink-0 drop-shadow-sm sm:h-11 sm:w-11" />
           <span className="flex flex-col leading-none">
-            <span className="font-display text-xl font-bold tracking-wide text-forest sm:text-2xl">
+            <span className="bg-gradient-to-b from-forest-light via-forest to-forest-dark bg-clip-text font-display text-xl font-bold tracking-wide text-transparent drop-shadow-sm sm:text-2xl">
               DERAX
             </span>
             <span className="text-[10px] font-semibold tracking-[0.35em] text-gold-dark sm:text-xs">
-              PROPERTIES
+              REAL ESTATE
             </span>
           </span>
         </Link>
