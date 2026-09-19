@@ -23,20 +23,28 @@ const caveat = Caveat({
   display: "swap",
 });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.deraxproperties.com";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.deraxrealestate.com";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Derax Properties | Distressed & Off-Market Real Estate Opportunities",
+    default: "Derax Real Estate | Derax Properties — Off-Market Real Estate Opportunities",
     template: "%s | Derax Properties",
   },
   description:
-    "Derax Properties connects homeowners, investors, and buyers with distressed, off-market, and real estate investment opportunities nationwide.",
+    "Derax Properties (Derax Real Estate) connects homeowners, investors, and buyers with distressed, off-market, and real estate investment opportunities nationwide.",
+  keywords: [
+    "Derax Properties",
+    "Derax Real Estate",
+    "off-market real estate",
+    "distressed properties",
+    "we buy houses",
+    "real estate wholesaling",
+  ],
   openGraph: {
-    title: "Derax Properties | Distressed & Off-Market Real Estate Opportunities",
+    title: "Derax Real Estate | Derax Properties — Off-Market Real Estate Opportunities",
     description:
-      "Derax Properties connects homeowners, investors, and buyers with distressed, off-market, and real estate investment opportunities nationwide.",
+      "Derax Properties (Derax Real Estate) connects homeowners, investors, and buyers with distressed, off-market, and real estate investment opportunities nationwide.",
     url: siteUrl,
     siteName: "Derax Properties",
     type: "website",

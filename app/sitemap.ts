@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.deraxproperties.com";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.deraxrealestate.com";
 
 const STATIC_ROUTES = [
   "",
