@@ -1,10 +1,10 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { cx } from "@/lib/utils";
+import { DeraxMark } from "@/components/DeraxMark";
 
 const NAV_LINKS = [
   { href: "/", label: "Home" },
@@ -28,20 +28,7 @@ export function Header() {
           className="focus-gold group flex items-center gap-3"
           onClick={() => setOpen(false)}
         >
-          <span className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full sm:h-14 sm:w-14">
-            <span
-              className="absolute inset-0 -z-10 rounded-full bg-gold/30 blur-md transition-opacity group-hover:bg-gold/50"
-              aria-hidden
-            />
-            <Image
-              src="/logo.png"
-              alt="Derax Properties"
-              width={112}
-              height={112}
-              priority
-              className="h-full w-full rounded-full object-cover ring-2 ring-gold shadow-[0_0_18px_rgba(201,162,75,0.45)]"
-            />
-          </span>
+          <DeraxMark className="h-10 w-10 shrink-0 sm:h-11 sm:w-11" />
           <span className="flex flex-col leading-none">
             <span className="font-display text-xl font-bold tracking-wide text-forest sm:text-2xl">
               DERAX
