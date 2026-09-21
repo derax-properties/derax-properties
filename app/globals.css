@@ -33,3 +33,117 @@ body {
 .text-balance {
   text-wrap: balance;
 }
+
+/*
+ * DERAX CRM admin reskin ("Sage & Clay").
+ * Scoped to the authenticated CRM dashboard shell only (app/admin/(dashboard)/layout.tsx).
+ * The public seller-facing site keeps its existing ink/cream/gold/forest brand
+ * untouched — this does not redefine any Tailwind color token, so nothing
+ * outside these two classes changes.
+ */
+.crm-sidebar {
+  background-color: #0c0f14;
+  background-image: linear-gradient(135deg, rgba(201, 162, 75, 0.07) 0%, transparent 40%),
+    linear-gradient(155deg, rgba(23, 58, 46, 0.45) 0%, transparent 55%),
+    linear-gradient(200deg, rgba(0, 0, 0, 0.4) 0%, transparent 70%);
+  position: relative;
+}
+
+.crm-sidebar::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 2px;
+  background: linear-gradient(180deg, rgba(201, 162, 75, 0.5), rgba(201, 162, 75, 0));
+  pointer-events: none;
+}
+
+.crm-canvas {
+  background-color: #eef1ec;
+  background-image: radial-gradient(ellipse 900px 500px at 12% -10%, rgba(23, 58, 46, 0.07), transparent 60%),
+    radial-gradient(ellipse 800px 600px at 108% 8%, rgba(201, 162, 75, 0.08), transparent 55%),
+    linear-gradient(120deg, rgba(23, 58, 46, 0.03) 0%, transparent 30%, rgba(201, 162, 75, 0.04) 70%, transparent 100%);
+  background-attachment: fixed;
+}
+
+/*
+ * CRM theme picker (four accent palettes x light/dark). This drives ONLY
+ * the accent color used by the topbar/stat tiles/kanban tags/active nav
+ * link (via the --crm-accent custom properties below) and swaps the main
+ * canvas tint between the light "crm-canvas" recipe above and a dimmed
+ * dark recipe. It intentionally does NOT recolor every card on every CRM
+ * page to a dark surface — that's a full dark-mode pass, tracked
+ * separately — so cards stay on a light surface in both modes for now.
+ * Applied via data-crm-theme/data-crm-mode on the CRM shell wrapper,
+ * set client-side by components/admin/ThemePicker.tsx and persisted in
+ * localStorage, so switching needs no rebuild or server round trip.
+ */
+.crm-shell {
+  --crm-accent: #4f7a5c;
+  --crm-accent-dark: #375a41;
+  --crm-accent-soft: #e4ede6;
+  --crm-accent-soft-text: #33513c;
+}
+.crm-shell[data-crm-theme="sky"] {
+  --crm-accent: #3f7ea6;
+  --crm-accent-dark: #2c5c7c;
+  --crm-accent-soft: #e2eef5;
+  --crm-accent-soft-text: #2c5c7c;
+}
+.crm-shell[data-crm-theme="citrus"] {
+  --crm-accent: #c9752f;
+  --crm-accent-dark: #9c5920;
+  --crm-accent-soft: #faeade;
+  --crm-accent-soft-text: #9c5920;
+}
+.crm-shell[data-crm-theme="orchard"] {
+  --crm-accent: #7c5cb0;
+  --crm-accent-dark: #5c4184;
+  --crm-accent-soft: #ece4f7;
+  --crm-accent-soft-text: #5c4184;
+}
+
+.crm-shell[data-crm-mode="dark"] .crm-canvas {
+  background-color: #14181e;
+  background-image: linear-gradient(135deg, rgba(201, 162, 75, 0.05) 0%, transparent 40%),
+    linear-gradient(155deg, rgba(23, 58, 46, 0.35) 0%, transparent 55%),
+    linear-gradient(200deg, rgba(0, 0, 0, 0.35) 0%, transparent 70%);
+}
+
+.crm-accent-bg {
+  background-color: var(--crm-accent);
+}
+.crm-accent-text {
+  color: var(--crm-accent);
+}
+.crm-accent-soft-bg {
+  background-color: var(--crm-accent-soft);
+  color: var(--crm-accent-soft-text);
+}
+
+/*
+ * Page-to-page slide, iPhone-style: each new admin page eases in from the
+ * right with a soft fade, like an iOS screen settling after a push
+ * transition. Applied by components/admin/PageTransition.tsx, which
+ * remounts this wrapper on every route change so the animation replays.
+ */
+.crm-page-slide {
+  animation: crm-page-slide-in 340ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes crm-page-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crm-page-slide {
+    animation: none;
+  }
+}

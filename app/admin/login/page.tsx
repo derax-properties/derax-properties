@@ -1,6 +1,6 @@
 import { signIn } from "./actions";
 
-export const metadata = { title: "Admin Login", robots: { index: false, follow: false } };
+export const metadata = { title: "Sign In — DERAX CRM", robots: { index: false, follow: false } };
 
 export default function AdminLoginPage({
   searchParams,
@@ -8,15 +8,16 @@ export default function AdminLoginPage({
   searchParams: { error?: string; redirectTo?: string };
 }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-ink px-4">
+    <div className="crm-sidebar flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-sm rounded-2xl bg-white p-8 shadow-card">
         <div className="mb-6 flex flex-col items-center leading-none">
           <span className="font-display text-xl font-bold text-ink">DERAX</span>
           <span className="text-[10px] font-semibold tracking-[0.35em] text-gold-dark">
-            PROPERTIES
+            CRM
           </span>
         </div>
-        <h1 className="text-center font-display text-xl font-semibold text-ink">Admin Login</h1>
+        <h1 className="text-center font-display text-xl font-semibold text-ink">Sign In</h1>
+        <p className="mt-1 text-center text-xs text-ink/50">For invited Admins and VAs only</p>
 
         <form action={signIn} className="mt-6 flex flex-col gap-4">
           <input type="hidden" name="redirectTo" value={searchParams.redirectTo ?? "/admin"} />
@@ -62,8 +63,7 @@ export default function AdminLoginPage({
         </form>
 
         <p className="mt-6 text-center text-xs text-ink/40">
-          Admin accounts are created in the Supabase dashboard. Contact your site administrator
-          for access.
+          DERAX CRM is invitation-only. If you need access, ask an Owner or Admin to invite you.
         </p>
       </div>
     </div>

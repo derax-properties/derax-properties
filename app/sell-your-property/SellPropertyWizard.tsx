@@ -5,8 +5,8 @@ import { FormInput, FormTextarea } from "@/components/FormInput";
 import { FormSelect, RadioGroup, CheckboxRow } from "@/components/FormSelect";
 import { FileUpload, type StagedFile } from "@/components/FileUpload";
 import { Button } from "@/components/Button";
+import { AddressAutocomplete, type ParsedAddress } from "@/components/AddressAutocomplete";
 import { sellerSubmissionSchema } from "@/lib/validation";
-import { isValidZip } from "@/lib/utils";
 
 const STEPS = ["Property", "Condition", "Seller", "Situation", "Photos", "Review"];
 
@@ -66,11 +66,20 @@ const SELLING_REASONS = [
 const TIMELINES = ["ASAP", "Within 30 days", "1–3 months", "3–6 months", "Just exploring my options"];
 
 const initialValues = {
+  // Populated automatically when the seller picks a suggestion from the
+  // single address field below — never typed separately. See
+  // components/AddressAutocomplete.tsx and plan doc sections 57-61.
   property_address: "",
   city: "",
   state: "",
   zip: "",
   county: "",
+  formatted_address: "",
+  latitude: "",
+  longitude: "",
+  place_id: "",
+  address_country: "US",
+  address_confidence: "" as "" | "high" | "medium" | "low",
   property_type: "",
   bedrooms: "",
   bathrooms: "",
@@ -112,11 +121,12 @@ function useStepValidation(values: Values) {
     const errors: Partial<Record<keyof Values, string>> = {};
 
     const requireStep1 = () => {
-      if (!values.property_address.trim()) errors.property_address = "Property address is required.";
-      if (!values.city.trim()) errors.city = "City is required.";
-      if (!values.state.trim()) errors.state = "State is required.";
-      else if (values.state.trim().length !== 2) errors.state = "Use a 2-letter state code.";
-      if (!values.zip.trim() || !isValidZip(values.zip)) errors.zip = "Enter a valid ZIP code.";
+      // The address field only ever holds a value once a suggestion has
+      // been selected and parsed (see AddressAutocomplete), so one check
+      // here covers street/city/state/zip together.
+      if (!values.formatted_address.trim() || !values.zip.trim()) {
+        errors.property_address = "We couldn't confirm this address. Please check the address and try again.";
+      }
       if (!values.property_type) errors.property_type = "Select a property type.";
     };
 
@@ -300,47 +310,53 @@ export function SellPropertyWizard() {
       <div className="rounded-2xl bg-white p-6 shadow-card sm:p-8">
         {step === 0 && (
           <div className="flex flex-col gap-5">
-            <FormInput
+            <AddressAutocomplete
               id="property_address"
-              label="Property Address"
+              label="What's the property address?"
               required
-              value={values.property_address}
               error={touchedErrors.property_address}
-              onChange={(e) => set("property_address", e.target.value)}
-            />
-            <div className="grid gap-5 sm:grid-cols-3">
-              <FormInput
-                id="city"
-                label="City"
-                required
-                value={values.city}
-                error={touchedErrors.city}
-                onChange={(e) => set("city", e.target.value)}
-              />
-              <FormInput
-                id="state"
-                label="State"
-                required
-                maxLength={2}
-                placeholder="GA"
-                value={values.state}
-                error={touchedErrors.state}
-                onChange={(e) => set("state", e.target.value.toUpperCase())}
-              />
-              <FormInput
-                id="zip"
-                label="ZIP Code"
-                required
-                value={values.zip}
-                error={touchedErrors.zip}
-                onChange={(e) => set("zip", e.target.value)}
-              />
-            </div>
-            <FormInput
-              id="county"
-              label="County"
-              value={values.county}
-              onChange={(e) => set("county", e.target.value)}
+              selected={
+                values.formatted_address
+                  ? {
+                      formatted_address: values.formatted_address,
+                      street: values.property_address || null,
+                      city: values.city || null,
+                      state: values.state || null,
+                      zip: values.zip || null,
+                      county: values.county || null,
+                      country: values.address_country,
+                      lat: Number(values.latitude) || 0,
+                      lng: Number(values.longitude) || 0,
+                      place_id: values.place_id,
+                      confidence: (values.address_confidence || "high") as "high" | "medium" | "low",
+                    }
+                  : null
+              }
+              onSelect={(address: ParsedAddress) => {
+                set("property_address", address.street ?? address.formatted_address);
+                set("city", address.city ?? "");
+                set("state", address.state ?? "");
+                set("zip", address.zip ?? "");
+                set("county", address.county ?? "");
+                set("formatted_address", address.formatted_address);
+                set("latitude", String(address.lat));
+                set("longitude", String(address.lng));
+                set("place_id", address.place_id);
+                set("address_country", address.country || "US");
+                set("address_confidence", address.confidence);
+              }}
+              onClear={() => {
+                set("property_address", "");
+                set("city", "");
+                set("state", "");
+                set("zip", "");
+                set("county", "");
+                set("formatted_address", "");
+                set("latitude", "");
+                set("longitude", "");
+                set("place_id", "");
+                set("address_confidence", "");
+              }}
             />
             <FormSelect
               id="property_type"
@@ -570,8 +586,7 @@ export function SellPropertyWizard() {
         {step === 5 && (
           <div className="flex flex-col gap-6">
             <ReviewSection title="Property">
-              <ReviewRow label="Address" value={values.property_address} />
-              <ReviewRow label="City / State / ZIP" value={`${values.city}, ${values.state} ${values.zip}`} />
+              <ReviewRow label="Address" value={values.formatted_address || values.property_address} />
               <ReviewRow label="Property Type" value={values.property_type} />
               <ReviewRow
                 label="Beds / Baths / Sq Ft"

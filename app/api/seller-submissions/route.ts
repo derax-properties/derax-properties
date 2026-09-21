@@ -23,9 +23,27 @@ export async function POST(request: Request) {
 
   try {
     const supabase = createAdminSupabaseClient();
+
+    // Duplicate flagging: never silently merge or drop a new submission —
+    // it's always saved as its own lead. If it matches an existing one by
+    // phone, email, or the exact parsed address, we just link the two so
+    // an admin can review and decide (see migration 0001).
+    const orFilters = [`phone.eq.${d.phone}`];
+    if (d.email) orFilters.push(`email.eq.${d.email}`);
+    if (d.formatted_address) orFilters.push(`formatted_address.eq.${d.formatted_address}`);
+
+    const { data: possibleDuplicate } = await supabase
+      .from("seller_submissions")
+      .select("id")
+      .or(orFilters.join(","))
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
     const { data, error } = await supabase
       .from("seller_submissions")
       .insert({
+        possible_duplicate_of: possibleDuplicate?.id ?? null,
         first_name: d.first_name,
         last_name: d.last_name,
         phone: d.phone,
@@ -39,6 +57,12 @@ export async function POST(request: Request) {
         state: d.state.toUpperCase(),
         zip: d.zip,
         county: d.county || null,
+        formatted_address: d.formatted_address,
+        latitude: Number.isFinite(d.latitude) ? d.latitude : null,
+        longitude: Number.isFinite(d.longitude) ? d.longitude : null,
+        place_id: d.place_id || null,
+        address_country: d.address_country || "US",
+        address_confidence: d.address_confidence || null,
         property_type: d.property_type,
         bedrooms: Number.isFinite(d.bedrooms) ? d.bedrooms : null,
         bathrooms: Number.isFinite(d.bathrooms) ? d.bathrooms : null,

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import type { SellerSubmission, LeadStatus, PropertyType } from "@/lib/types";
 import { StatusBadge } from "@/components/StatusBadge";
+import { ZipPopulationBadge } from "@/components/admin/ZipPopulationBadge";
 import { formatDate } from "@/lib/utils";
 
 const STATUSES: LeadStatus[] = [
@@ -63,8 +64,8 @@ function toCsv(rows: SellerSubmission[]): string {
   return lines.join("\n");
 }
 
-export function LeadsTable({ leads }: { leads: SellerSubmission[] }) {
-  const [search, setSearch] = useState("");
+export function LeadsTable({ leads, initialSearch = "" }: { leads: SellerSubmission[]; initialSearch?: string }) {
+  const [search, setSearch] = useState(initialSearch);
   const [state, setState] = useState("");
   const [zip, setZip] = useState("");
   const [status, setStatus] = useState("");
@@ -181,6 +182,7 @@ export function LeadsTable({ leads }: { leads: SellerSubmission[] }) {
               <th className="p-3">Phone / Email</th>
               <th className="p-3">Property</th>
               <th className="p-3">Type</th>
+              <th className="p-3">Motivation</th>
               <th className="p-3">Status</th>
               <th className="p-3">Submitted</th>
             </tr>
@@ -192,6 +194,11 @@ export function LeadsTable({ leads }: { leads: SellerSubmission[] }) {
                   <Link href={`/admin/leads/${lead.id}`} className="focus-gold font-medium text-gold-dark hover:underline">
                     {lead.reference_number}
                   </Link>
+                  {lead.possible_duplicate_of && (
+                    <span title="Possible duplicate — review before contacting twice" className="ml-1.5 text-amber-600">
+                      ⚠
+                    </span>
+                  )}
                 </td>
                 <td className="p-3">
                   {lead.first_name} {lead.last_name}
@@ -210,8 +217,27 @@ export function LeadsTable({ leads }: { leads: SellerSubmission[] }) {
                 </td>
                 <td className="p-3">
                   {lead.property_address}, {lead.city}, {lead.state} {lead.zip}
+                  <ZipPopulationBadge zip={lead.zip} />
                 </td>
                 <td className="p-3">{lead.property_type}</td>
+                <td className="p-3">
+                  {lead.motivation_level ? (
+                    <span
+                      className={
+                        "rounded-full px-2 py-0.5 text-xs font-semibold " +
+                        (lead.motivation_level === "Hot"
+                          ? "bg-red-100 text-red-700"
+                          : lead.motivation_level === "Warm"
+                          ? "bg-amber-100 text-amber-700"
+                          : "bg-sky-100 text-sky-700")
+                      }
+                    >
+                      {lead.motivation_level}
+                    </span>
+                  ) : (
+                    <span className="text-ink/30">—</span>
+                  )}
+                </td>
                 <td className="p-3">
                   <StatusBadge status={lead.status} />
                 </td>
@@ -220,7 +246,7 @@ export function LeadsTable({ leads }: { leads: SellerSubmission[] }) {
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={7} className="p-8 text-center text-ink/40">
+                <td colSpan={8} className="p-8 text-center text-ink/40">
                   No leads match those filters.
                 </td>
               </tr>

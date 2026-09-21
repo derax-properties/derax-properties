@@ -9,6 +9,16 @@ export const sellerSubmissionSchema = z.object({
     .string()
     .regex(/^\d{5}(-\d{4})?$/, "Enter a valid ZIP code."),
   county: z.string().optional().or(z.literal("")),
+
+  // Parsed automatically from the single address-autocomplete field
+  // (see components/AddressAutocomplete.tsx) — never asked separately.
+  formatted_address: z.string().min(3, "We couldn't confirm this address. Please check the address and try again."),
+  latitude: z.coerce.number().optional().or(z.nan()),
+  longitude: z.coerce.number().optional().or(z.nan()),
+  place_id: z.string().optional().or(z.literal("")),
+  address_country: z.string().optional().or(z.literal("")),
+  address_confidence: z.enum(["high", "medium", "low", ""]).optional(),
+
   property_type: z.enum([
     "Single Family",
     "Multi-Family",

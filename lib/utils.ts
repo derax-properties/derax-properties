@@ -25,14 +25,14 @@ export function slugify(input: string): string {
 }
 
 /**
- * Generates a human-friendly reference number in the format DP-YYYY-XXXXXX.
+ * Generates a human-friendly reference number in the format DRX-XXXXXX.
  * This is a client/server-safe fallback used before the database default
- * (see supabase/schema.sql) assigns the permanent value.
+ * (see supabase/migrations/0001_crm_foundation.sql) assigns the permanent
+ * value.
  */
 export function generateReferenceNumber(): string {
-  const year = new Date().getFullYear();
   const random = Math.floor(100000 + Math.random() * 900000);
-  return `DP-${year}-${random}`;
+  return `DRX-${random}`;
 }
 
 export function cx(...classes: Array<string | false | null | undefined>): string {

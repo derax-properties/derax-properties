@@ -2,11 +2,36 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 /**
- * Protects every /admin route except /admin/login. Refreshes the Supabase
- * auth session cookie on each request and redirects signed-out visitors
- * to the login page.
+ * Enforces the real security boundary for both CRM surfaces — /admin
+ * (Owner/Admin) and /agent-intake (VA) — and, per the plan's "subdomain
+ * architecture" section, lets a `crm.` subdomain reach the same CRM
+ * without a rebuild: point crm.yourdomain.com at this same deployment in
+ * Vercel (or use it on the default *.vercel.app host during development)
+ * and requests to its bare root are internally rewritten to /admin. The
+ * public marketing site keeps its own root on the main domain untouched.
+ *
+ * Auth/role checks below are the actual boundary — noindex/robots (see
+ * app/robots.ts and each CRM layout's metadata) are cosmetic on top of
+ * this, never a substitute for it.
  */
 export async function middleware(request: NextRequest) {
+  const host = request.headers.get("host") ?? "";
+  const isCrmSubdomain = host.startsWith("crm.");
+
+  // On the CRM subdomain, a bare "/" means "open the CRM", not the
+  // marketing homepage.
+  if (isCrmSubdomain && request.nextUrl.pathname === "/") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/admin";
+    return NextResponse.rewrite(url);
+  }
+
+  // Bare "/" on the main public domain needs no auth check at all — skip
+  // the Supabase round trip on every marketing-site homepage visit.
+  if (!isCrmSubdomain && request.nextUrl.pathname === "/") {
+    return NextResponse.next();
+  }
+
   const response = NextResponse.next({ request: { headers: request.headers } });
 
   const supabase = createServerClient(
@@ -31,21 +56,50 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const isLoginRoute = request.nextUrl.pathname === "/admin/login";
+  const path = request.nextUrl.pathname;
+  const isAdminRoute = path.startsWith("/admin");
+  const isAgentIntakeRoute = path.startsWith("/agent-intake");
+  const isLoginRoute = path === "/admin/login";
+  const isAcceptInviteRoute = path.startsWith("/admin/accept-invite/");
+  const isAgentLoginRoute = path === "/agent-intake/login";
 
-  if (!user && !isLoginRoute) {
-    const redirectUrl = new URL("/admin/login", request.url);
-    redirectUrl.searchParams.set("redirectTo", request.nextUrl.pathname);
-    return NextResponse.redirect(redirectUrl);
+  if (isAdminRoute && !isLoginRoute && !isAcceptInviteRoute) {
+    if (!user) {
+      const redirectUrl = new URL("/admin/login", request.url);
+      redirectUrl.searchParams.set("redirectTo", path);
+      return NextResponse.redirect(redirectUrl);
+    }
+    // A VA never reaches the full CRM dashboard — that's the entire point
+    // of the separate /agent-intake surface. Role is looked up once here;
+    // each page/action still checks it again server-side (defense in depth).
+    const { data: profile } = await supabase.from("admin_profiles").select("role").eq("id", user.id).maybeSingle();
+    if (profile?.role === "va") {
+      return NextResponse.redirect(new URL("/agent-intake", request.url));
+    }
   }
 
   if (user && isLoginRoute) {
     return NextResponse.redirect(new URL("/admin", request.url));
   }
 
+  if (isAgentIntakeRoute && !isAgentLoginRoute) {
+    if (!user) {
+      return NextResponse.redirect(new URL("/agent-intake/login", request.url));
+    }
+    const { data: profile } = await supabase.from("admin_profiles").select("role").eq("id", user.id).maybeSingle();
+    if (profile && profile.role !== "va") {
+      // Owners/Admins belong in the full CRM, not the intake tool.
+      return NextResponse.redirect(new URL("/admin", request.url));
+    }
+  }
+
+  if (user && isAgentLoginRoute) {
+    return NextResponse.redirect(new URL("/agent-intake", request.url));
+  }
+
   return response;
 }
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/admin/:path*", "/agent-intake/:path*", "/"],
 };
