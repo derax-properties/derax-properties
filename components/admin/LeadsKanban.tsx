@@ -169,11 +169,19 @@ export function LeadsKanban({
                       </div>
                     )}
                   </Link>
+                  {col.stage === "Qualified" && (
+                    <Link
+                      href={`/admin/leads/${lead.id}#underwriting`}
+                      className="focus-gold mt-2.5 block w-full rounded-full border border-gold bg-gold/10 px-3 py-1.5 text-center text-[11px] font-bold text-gold-dark hover:bg-gold/20"
+                    >
+                      Go to Underwriting →
+                    </Link>
+                  )}
                   {nextStage && (
                     <button
                       type="button"
                       onClick={() => handleAdvance(lead, nextStage)}
-                      className="focus-gold mt-2.5 w-full rounded-full bg-forest px-3 py-1.5 text-[11px] font-bold text-white hover:bg-forest/90"
+                      className="focus-gold mt-2 w-full rounded-full bg-forest px-3 py-1.5 text-[11px] font-bold text-white hover:bg-forest/90"
                     >
                       {nextStage === "Closed" ? "Close Deal →" : `Mark ${nextStage} →`}
                     </button>

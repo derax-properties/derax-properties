@@ -189,6 +189,33 @@ export type PipelineStage = "New Lead" | "Contacted" | "Qualified" | "Offer Made
 export type MotivationLevel = "Hot" | "Warm" | "Cold";
 export type AddressConfidence = "high" | "medium" | "low" | "unresolved";
 
+// The standard repair checklist categories (plan section 34's condition
+// checklist) — every lead's repair estimate is the sum of these, one row
+// each in `repair_items`, rather than a single lump-sum guess.
+export const REPAIR_CATEGORIES = [
+  "Roof",
+  "HVAC",
+  "Foundation",
+  "Plumbing",
+  "Electrical",
+  "Kitchen",
+  "Bathrooms",
+  "Windows",
+  "Siding/Exterior",
+  "Flooring",
+  "Other",
+] as const;
+export type RepairCategory = (typeof REPAIR_CATEGORIES)[number];
+
+export interface RepairItem {
+  id: string;
+  seller_submission_id: string;
+  category: RepairCategory | string;
+  cost: number;
+  source: "manual" | "ai";
+  updated_at: string;
+}
+
 // ---------------------------------------------------------------------------
 // Cash buyers, title companies, deals (Phases 5-9)
 // ---------------------------------------------------------------------------

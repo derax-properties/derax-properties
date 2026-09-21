@@ -1,8 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getPopulationForZip } from "@/lib/population";
+import { REPAIR_CATEGORIES } from "@/lib/types";
+import { estimateRepairsWithAI } from "@/lib/aiRepairEstimate";
 
 export async function updateLead(id: string, formData: FormData) {
   const status = formData.get("status");
@@ -103,6 +106,114 @@ export async function updateUnderwriting(id: string, formData: FormData) {
     .eq("id", id);
 
   revalidatePath(`/admin/leads/${id}`);
+}
+
+/**
+ * Saves the itemized repair checklist (Roof, HVAC, Foundation, Electrical,
+ * Kitchen, etc.) for a lead and rolls the categories up into the single
+ * `repair_estimate` number the Underwriting Snapshot and MAO calculation
+ * already read — so filling in the breakdown here is what actually moves
+ * "Repairs" on the snapshot, rather than being a second, disconnected total
+ * someone would have to re-enter by hand.
+ */
+export async function updateRepairItems(id: string, formData: FormData) {
+  const supabase = createServerSupabaseClient();
+
+  const rows = REPAIR_CATEGORIES.map((category) => {
+    const raw = formData.get(`repair_${category}`);
+    const cost = typeof raw === "string" && raw.trim() !== "" ? Number(raw) : 0;
+    return {
+      seller_submission_id: id,
+      category,
+      cost: Number.isFinite(cost) ? cost : 0,
+      source: "manual" as const,
+      updated_at: new Date().toISOString(),
+    };
+  });
+
+  await supabase.from("repair_items").upsert(rows, { onConflict: "seller_submission_id,category" });
+
+  const total = rows.reduce((sum, r) => sum + r.cost, 0);
+  await supabase
+    .from("seller_submissions")
+    .update({ repair_estimate: total, underwriting_updated_at: new Date().toISOString() })
+    .eq("id", id);
+
+  revalidatePath(`/admin/leads/${id}`);
+}
+
+/**
+ * "Estimate with AI": a real Anthropic API call (lib/aiRepairEstimate.ts)
+ * that reads only this lead's own stored condition data and suggests a
+ * starting cost per repair category. Every value it returns is saved to
+ * repair_items tagged source='ai' and rolled into repair_estimate exactly
+ * like a manual save — nothing about how it's stored or displayed treats
+ * an AI number differently from one an admin typed, except the small
+ * "AI estimated" note the lead page shows next to it. The admin can edit
+ * any field and re-save (which switches it back to source='manual') before
+ * using it for an offer — this is a starting point, never a final number.
+ */
+export async function estimateRepairsWithAIAction(id: string) {
+  const supabase = createServerSupabaseClient();
+  const { data: lead } = await supabase.from("seller_submissions").select("*").eq("id", id).single();
+
+  if (!lead) {
+    redirect(`/admin/leads/${id}#underwriting`);
+  }
+
+  const issues: string[] = [];
+  if (lead.foundation_issue) issues.push("Foundation issue reported");
+  if (lead.plumbing_issue) issues.push("Plumbing issue reported");
+  if (lead.electrical_issue) issues.push("Electrical issue reported");
+  if (lead.water_damage) issues.push("Water damage reported");
+  if (lead.fire_damage) issues.push("Fire damage reported");
+  if (lead.mold) issues.push("Mold reported");
+  if (lead.structural_issue) issues.push("Structural issue reported");
+  if (lead.roof_condition) issues.push(`Roof condition: ${lead.roof_condition}`);
+  if (lead.hvac_condition) issues.push(`HVAC condition: ${lead.hvac_condition}`);
+
+  const result = await estimateRepairsWithAI({
+    propertyType: lead.property_type,
+    overallCondition: lead.condition ?? null,
+    sqft: lead.square_feet ?? null,
+    yearBuilt: lead.year_built ?? null,
+    issues,
+    additionalDetails: lead.additional_details ?? lead.notes ?? null,
+  });
+
+  if (!result) {
+    redirect(
+      `/admin/leads/${id}?error=${encodeURIComponent(
+        "AI repair estimate is not available right now — check ANTHROPIC_API_KEY is configured, or fill in the breakdown manually."
+      )}#underwriting`
+    );
+  }
+
+  const rows = REPAIR_CATEGORIES.map((category) => ({
+    seller_submission_id: id,
+    category,
+    cost: result.costs[category] ?? 0,
+    source: "ai" as const,
+    updated_at: new Date().toISOString(),
+  }));
+
+  await supabase.from("repair_items").upsert(rows, { onConflict: "seller_submission_id,category" });
+
+  const total = rows.reduce((sum, r) => sum + r.cost, 0);
+  await supabase
+    .from("seller_submissions")
+    .update({ repair_estimate: total, underwriting_updated_at: new Date().toISOString() })
+    .eq("id", id);
+
+  await supabase.from("activity_log").insert({
+    seller_submission_id: id,
+    actor_id: null,
+    actor_type: "ai",
+    action: `AI repair estimate generated: $${total.toLocaleString()} total. ${result.summary}`,
+  });
+
+  revalidatePath(`/admin/leads/${id}`);
+  redirect(`/admin/leads/${id}#underwriting`);
 }
 
 export async function logActivity(sellerSubmissionId: string, actorId: string | null, action: string) {

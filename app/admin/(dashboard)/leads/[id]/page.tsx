@@ -5,10 +5,18 @@ import { getSignedUrl } from "@/lib/storage";
 import type { SellerSubmission } from "@/lib/types";
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatDate } from "@/lib/utils";
-import { updateLead, logActivity, generateLocationInsight, updateUnderwriting } from "./actions";
+import {
+  updateLead,
+  logActivity,
+  generateLocationInsight,
+  updateUnderwriting,
+  updateRepairItems,
+  estimateRepairsWithAIAction,
+} from "./actions";
 import { getPopulationForZip } from "@/lib/population";
 import { matchBuyersForLead, matchTier } from "@/lib/buyerMatching";
-import type { CashBuyer, BuyerZipCode, BuyerInvestmentCriteria } from "@/lib/types";
+import type { CashBuyer, BuyerZipCode, BuyerInvestmentCriteria, RepairItem } from "@/lib/types";
+import { REPAIR_CATEGORIES } from "@/lib/types";
 import { createDeal } from "../../deals/actions";
 import { calculateMAO } from "@/lib/profitAnalysis";
 
@@ -41,7 +49,13 @@ const ISSUE_LABELS: Array<[keyof SellerSubmission, string]> = [
   ["structural_issue", "Structural"],
 ];
 
-export default async function LeadDetailPage({ params }: { params: { id: string } }) {
+export default async function LeadDetailPage({
+  params,
+  searchParams,
+}: {
+  params: { id: string };
+  searchParams: { error?: string };
+}) {
   const supabase = createServerSupabaseClient();
 
   const { data: lead } = await supabase
@@ -69,6 +83,17 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
 
   const population = lead.zip ? await getPopulationForZip(lead.zip) : null;
   const generateLocationInsightWithId = generateLocationInsight.bind(null, params.id, lead.zip);
+
+  const { data: repairItemRows } = await supabase
+    .from("repair_items")
+    .select("*")
+    .eq("seller_submission_id", params.id);
+  const repairCostByCategory = new Map<string, number>();
+  for (const r of (repairItemRows as RepairItem[]) ?? []) {
+    repairCostByCategory.set(r.category, r.cost);
+  }
+  const updateRepairItemsWithId = updateRepairItems.bind(null, params.id);
+  const estimateRepairsWithAIWithId = estimateRepairsWithAIAction.bind(null, params.id);
 
   const { data: activeBuyers } = await supabase.from("cash_buyers").select("*").eq("status", "Active");
   const buyerIds = (activeBuyers ?? []).map((b) => b.id);
@@ -217,7 +242,7 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
           )}
         </div>
 
-        <div className="rounded-xl bg-white p-5 shadow-sm">
+        <div id="underwriting" className="scroll-mt-24 rounded-xl bg-white p-5 shadow-sm">
           <h2 className="font-display text-lg font-semibold text-ink">Underwriting Snapshot</h2>
           <p className="mt-1 text-xs text-ink/40">
             Entered by your team, not auto-calculated from an outside source — verify comps before offering.
@@ -299,6 +324,58 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
               Save Underwriting
             </button>
           </form>
+
+          <div className="mt-5 border-t border-ink/10 pt-4">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <h3 className="text-sm font-semibold text-ink">Repair Estimate Breakdown</h3>
+                <p className="mt-1 text-xs text-ink/40">
+                  Enter a cost per category — the total replaces "Repair Estimate ($)" above automatically.
+                </p>
+              </div>
+              <form action={estimateRepairsWithAIWithId}>
+                <button
+                  type="submit"
+                  className="focus-gold shrink-0 rounded-full border border-violet-300 bg-violet-50 px-4 py-1.5 text-xs font-semibold text-violet-700 hover:bg-violet-100"
+                >
+                  ✨ Estimate with AI
+                </button>
+              </form>
+            </div>
+            <p className="mt-2 rounded-lg bg-violet-50 px-3 py-2 text-[11px] text-violet-700">
+              AI-generated estimate — always verify against real comps and contractor quotes before making an offer.
+            </p>
+            {searchParams.error && (
+              <p className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-700" role="alert">
+                {searchParams.error}
+              </p>
+            )}
+            <form action={updateRepairItemsWithId} className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {REPAIR_CATEGORIES.map((category) => (
+                <div key={category}>
+                  <label htmlFor={`repair_${category}`} className="text-xs font-medium text-ink/60">
+                    {category}
+                  </label>
+                  <input
+                    id={`repair_${category}`}
+                    name={`repair_${category}`}
+                    type="number"
+                    step="100"
+                    min="0"
+                    defaultValue={repairCostByCategory.get(category) ?? ""}
+                    placeholder="0"
+                    className="focus-gold mt-1 w-full rounded-lg border border-ink/15 px-3 py-1.5 text-sm"
+                  />
+                </div>
+              ))}
+              <button
+                type="submit"
+                className="focus-gold col-span-2 mt-1 self-end rounded-full bg-forest px-5 py-2 text-xs font-semibold text-white hover:bg-forest/90 sm:col-span-3"
+              >
+                Save Repair Breakdown
+              </button>
+            </form>
+          </div>
         </div>
       </div>
 
