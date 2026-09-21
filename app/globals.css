@@ -147,3 +147,39 @@ body {
     animation: none;
   }
 }
+
+/*
+ * Kanban card move, matching the pipeline-preview mockup: a card slides out
+ * to the right and fades as it leaves its old column (crm-kanban-card-out),
+ * then slides in from the left as it lands in its new one
+ * (crm-kanban-card-in). Applied by components/admin/LeadsKanban.tsx when a
+ * lead is advanced to its next pipeline stage.
+ */
+.crm-kanban-card-out {
+  transform: translateX(24px);
+  opacity: 0;
+  transition: transform 220ms ease, opacity 220ms ease;
+}
+
+.crm-kanban-card-in {
+  animation: crm-kanban-card-slide-in 350ms ease;
+}
+
+@keyframes crm-kanban-card-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crm-kanban-card-out,
+  .crm-kanban-card-in {
+    animation: none;
+    transition: none;
+  }
+}
