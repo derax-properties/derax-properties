@@ -6,8 +6,9 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { mergePurchaseAgreement, mergeDealSummary, mergeBuyerPackage, wrapAsPrintableDocument } from "@/lib/contractGenerator";
 import { getEsignProvider, type EsignStatus } from "@/lib/esign";
+import { getSignedUrl } from "@/lib/storage";
 import { getCurrentAdminProfile } from "@/lib/supabase/profile";
-import type { Deal, SellerSubmission, CashBuyer, TitleCompany } from "@/lib/types";
+import type { Deal, SellerSubmission, CashBuyer, TitleCompany, LeadComp, DocumentSignerStatus } from "@/lib/types";
 
 /**
  * Creates a deal from a lead. Nothing here contacts a buyer, sends a
@@ -214,6 +215,15 @@ export async function generateDealSummary(dealId: string) {
  * contact line defaults to the DERAX acquisitions line; pass a custom one
  * via formData to customize it per send, per the plan's "customizable
  * Buyer Deal Package" requirement.
+ *
+ * Which sections go in (Overview, Numbers, Photos, Comps) are checkboxes
+ * on the deal page, read here from formData — so the same "Buyer Package"
+ * button can produce anything from a bare contact line to the full
+ * breakdown with photos and comps, per send, without a separate template
+ * for each combination. Photo URLs embedded in the generated HTML are
+ * signed for 7 days rather than the usual short-lived default, since this
+ * document is meant to be opened by a buyer well after it's generated —
+ * they'll need regenerating past that window.
  */
 export async function generateBuyerPackage(dealId: string, formData: FormData) {
   const bundle = await loadDealBundle(dealId);
@@ -221,7 +231,39 @@ export async function generateBuyerPackage(dealId: string, formData: FormData) {
   const contactLine =
     String(formData.get("contact_line") ?? "").trim() ||
     `Contact DERAX Acquisitions to discuss this property: ${process.env.NOTIFICATION_EMAIL ?? "acquisitions@deraxproperties.com"}`;
-  const bodyHtml = mergeBuyerPackage(bundle.deal, bundle.lead, contactLine);
+
+  const sections = {
+    overview: formData.get("include_overview") === "on",
+    numbers: formData.get("include_numbers") === "on",
+    photos: formData.get("include_photos") === "on",
+    comps: formData.get("include_comps") === "on",
+  };
+
+  let photoUrls: string[] = [];
+  if (sections.photos) {
+    const { data: photoRows } = await bundle.admin
+      .from("seller_property_photos")
+      .select("storage_path")
+      .eq("submission_id", bundle.lead.id);
+    const photoBucket = process.env.SUPABASE_SELLER_PHOTOS_BUCKET || "seller-photos";
+    photoUrls = (
+      await Promise.all(
+        (photoRows ?? []).map((p) => getSignedUrl(photoBucket, p.storage_path, 60 * 60 * 24 * 7))
+      )
+    ).filter((u): u is string => Boolean(u));
+  }
+
+  let comps: LeadComp[] = [];
+  if (sections.comps) {
+    const { data: compRows } = await bundle.admin
+      .from("lead_comps")
+      .select("*")
+      .eq("seller_submission_id", bundle.lead.id)
+      .order("sale_date", { ascending: false });
+    comps = (compRows as LeadComp[]) ?? [];
+  }
+
+  const bodyHtml = mergeBuyerPackage(bundle.deal, bundle.lead, contactLine, sections, photoUrls, comps);
   const result = await saveGeneratedDocument(bundle.admin, dealId, "Buyer Deal Package PDF", `Property Package — ${bundle.lead.property_address}`, bodyHtml);
   revalidatePath(`/admin/deals/${dealId}`);
   return result;
@@ -268,5 +310,88 @@ export async function updateDocumentEsignStatus(documentId: string, dealId: stri
     action: `Marked document as ${status}`,
   });
 
+  revalidatePath(`/admin/deals/${dealId}`);
+}
+
+/**
+ * Adds a named signer to a document, appended after whoever's already on
+ * it (sign_order = current max + 1) — this is what turns a document from
+ * the plain single esign_status above into a document with a real signing
+ * order (e.g. seller signs first, then buyer).
+ */
+export async function addDocumentSigner(documentId: string, dealId: string, formData: FormData) {
+  const signerName = String(formData.get("signer_name") ?? "").trim();
+  if (!signerName) return;
+  const signerRole = String(formData.get("signer_role") ?? "").trim() || null;
+  const signerEmail = String(formData.get("signer_email") ?? "").trim() || null;
+
+  const supabase = createServerSupabaseClient();
+  const { data: existing } = await supabase
+    .from("document_signers")
+    .select("sign_order")
+    .eq("document_id", documentId)
+    .order("sign_order", { ascending: false })
+    .limit(1);
+  const nextOrder = (existing?.[0]?.sign_order ?? 0) + 1;
+
+  await supabase.from("document_signers").insert({
+    document_id: documentId,
+    signer_name: signerName,
+    signer_role: signerRole,
+    signer_email: signerEmail,
+    sign_order: nextOrder,
+  });
+
+  const profile = await getCurrentAdminProfile();
+  await supabase.from("activity_log").insert({
+    deal_id: dealId,
+    actor_id: profile?.id ?? null,
+    actor_type: "user",
+    action: `Added signer #${nextOrder}: ${signerName}${signerRole ? ` (${signerRole})` : ""}`,
+  });
+
+  revalidatePath(`/admin/deals/${dealId}`);
+}
+
+/**
+ * Moves one signer's status forward. Enforces the signing order: a signer
+ * can only leave "Not Sent" once every signer ahead of them (lower
+ * sign_order, same document) is already "Signed" — mirroring what the UI
+ * already disables, so a stale page can't skip the order. There's no real
+ * e-sign vendor behind this (see lib/esign.ts) — this is the CRM's own
+ * tracked sequence, moved forward by an explicit admin click each time.
+ */
+export async function updateSignerStatus(signerId: string, documentId: string, dealId: string, status: DocumentSignerStatus) {
+  const supabase = createServerSupabaseClient();
+
+  if (status !== "Not Sent") {
+    const { data: signer } = await supabase.from("document_signers").select("sign_order").eq("id", signerId).maybeSingle();
+    if (signer) {
+      const { data: earlierSigners } = await supabase
+        .from("document_signers")
+        .select("status")
+        .eq("document_id", documentId)
+        .lt("sign_order", signer.sign_order);
+      const blocked = (earlierSigners ?? []).some((s) => s.status !== "Signed");
+      if (blocked) return;
+    }
+  }
+
+  await supabase.from("document_signers").update({ status, updated_at: new Date().toISOString() }).eq("id", signerId);
+
+  const profile = await getCurrentAdminProfile();
+  await supabase.from("activity_log").insert({
+    deal_id: dealId,
+    actor_id: profile?.id ?? null,
+    actor_type: "user",
+    action: `Signer status updated to ${status}`,
+  });
+
+  revalidatePath(`/admin/deals/${dealId}`);
+}
+
+export async function removeDocumentSigner(signerId: string, documentId: string, dealId: string) {
+  const supabase = createServerSupabaseClient();
+  await supabase.from("document_signers").delete().eq("id", signerId);
   revalidatePath(`/admin/deals/${dealId}`);
 }

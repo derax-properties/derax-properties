@@ -1,6 +1,6 @@
 import { DEFAULT_PURCHASE_AGREEMENT_TEMPLATE } from "./templates/purchaseAgreement";
 import { DEAL_SUMMARY_TEMPLATE, BUYER_PACKAGE_TEMPLATE } from "./templates/dealDocuments";
-import type { Deal, SellerSubmission, CashBuyer, TitleCompany } from "./types";
+import type { Deal, SellerSubmission, CashBuyer, TitleCompany, LeadComp } from "./types";
 
 function fillTemplate(template: string, values: Record<string, string>): string {
   let merged = template;
@@ -30,33 +30,94 @@ export function mergeDealSummary(deal: Deal, lead: SellerSubmission, buyer: Cash
   });
 }
 
+export interface BuyerPackageSections {
+  overview: boolean;
+  numbers: boolean;
+  photos: boolean;
+  comps: boolean;
+}
+
 /**
  * The buyer-facing package deliberately omits internal numbers a buyer has
  * no business seeing (assignment fee, MAO, purchase price) — only the
  * property facts and the asking/assignment price go out. `contactLine`
  * lets the caller customize who the buyer should reach out to.
+ *
+ * Overview / Numbers / Photos / Comps are each opt-in per send via
+ * `sections` — the admin checks which apply on the deal page before
+ * generating, so (for example) a buyer package can go out with just
+ * photos and a contact line, or with the full breakdown, without a
+ * separate template for every combination. `photoUrls` are already-signed
+ * URLs (see the caller) and `comps` are that lead's saved comparable
+ * sales; both are simply omitted from the document when their section is
+ * unchecked or there's nothing to show.
  */
-export function mergeBuyerPackage(deal: Deal, lead: SellerSubmission, contactLine: string): string {
+export function mergeBuyerPackage(
+  deal: Deal,
+  lead: SellerSubmission,
+  contactLine: string,
+  sections: BuyerPackageSections,
+  photoUrls: string[] = [],
+  comps: LeadComp[] = []
+): string {
+  const overviewSection = sections.overview
+    ? `<h2>Overview</h2>
+<p><strong>Property Type:</strong> ${lead.property_type}</p>
+<p><strong>Beds / Baths / Sq Ft:</strong> ${lead.bedrooms ?? "—"} / ${lead.bathrooms ?? "—"} / ${lead.square_feet ?? "—"}</p>
+<p><strong>Year Built:</strong> ${lead.year_built ?? "—"}</p>
+<p><strong>Condition:</strong> ${lead.condition}</p>`
+    : "";
+
+  const askingPrice =
+    deal.exit_strategy === "Wholesale" || deal.exit_strategy === "Assignment"
+      ? deal.assignment_fee != null && deal.purchase_price != null
+        ? `$${(deal.purchase_price + deal.assignment_fee).toLocaleString()}`
+        : "Contact for pricing"
+      : deal.purchase_price != null
+      ? `$${deal.purchase_price.toLocaleString()}`
+      : "Contact for pricing";
+
+  const numbersSection = sections.numbers
+    ? `<h2>Numbers</h2>
+<p><strong>ARV Estimate:</strong> ${deal.arv_estimate != null ? `$${deal.arv_estimate.toLocaleString()}` : "Contact for details"}</p>
+<p><strong>Estimated Repairs:</strong> ${deal.estimated_repairs != null ? `$${deal.estimated_repairs.toLocaleString()}` : "Contact for details"}</p>
+<p><strong>Asking / Assignment Price:</strong> ${askingPrice}</p>`
+    : "";
+
+  const photosSection =
+    sections.photos && photoUrls.length > 0
+      ? `<h2>Photos</h2>
+<div style="display:flex;flex-wrap:wrap;gap:8px;">${photoUrls
+          .map((url) => `<img src="${url}" style="width:180px;height:135px;object-fit:cover;border-radius:6px;" alt="Property photo" />`)
+          .join("")}</div>`
+      : "";
+
+  const compsSection =
+    sections.comps && comps.length > 0
+      ? `<h2>Comparable Sales</h2>
+<table style="width:100%;border-collapse:collapse;font-size:12px;">
+<thead><tr style="text-align:left;border-bottom:1px solid #ccc;"><th>Address</th><th>Sale Price</th><th>Beds/Baths</th><th>Sq Ft</th></tr></thead>
+<tbody>${comps
+          .map(
+            (c) =>
+              `<tr style="border-bottom:1px solid #eee;"><td>${c.address}</td><td>${
+                c.sale_price != null ? `$${c.sale_price.toLocaleString()}` : "—"
+              }</td><td>${c.bedrooms ?? "—"}/${c.bathrooms ?? "—"}</td><td>${c.square_feet?.toLocaleString() ?? "—"}</td></tr>`
+          )
+          .join("")}</tbody>
+</table>`
+      : "";
+
   return fillTemplate(BUYER_PACKAGE_TEMPLATE, {
     today: new Date().toLocaleDateString("en-US"),
     property_address: lead.property_address,
     property_city: lead.city,
     property_state: lead.state,
     property_zip: lead.zip,
-    property_type: lead.property_type,
-    beds_baths_sqft: `${lead.bedrooms ?? "—"} / ${lead.bathrooms ?? "—"} / ${lead.square_feet ?? "—"}`,
-    year_built: String(lead.year_built ?? "—"),
-    condition: lead.condition,
-    arv_estimate: deal.arv_estimate != null ? `$${deal.arv_estimate.toLocaleString()}` : "Contact for details",
-    estimated_repairs: deal.estimated_repairs != null ? `$${deal.estimated_repairs.toLocaleString()}` : "Contact for details",
-    asking_price:
-      deal.exit_strategy === "Wholesale" || deal.exit_strategy === "Assignment"
-        ? deal.assignment_fee != null && deal.purchase_price != null
-          ? `$${(deal.purchase_price + deal.assignment_fee).toLocaleString()}`
-          : "Contact for pricing"
-        : deal.purchase_price != null
-        ? `$${deal.purchase_price.toLocaleString()}`
-        : "Contact for pricing",
+    overview_section: overviewSection,
+    numbers_section: numbersSection,
+    photos_section: photosSection,
+    comps_section: compsSection,
     contact_line: contactLine,
   });
 }

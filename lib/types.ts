@@ -443,6 +443,26 @@ export interface GeneratedDocument {
   generated_by: string | null;
 }
 
+// A document's per-signer status when it needs more than one signature
+// (e.g. seller and buyer on a Purchase Agreement) — separate from the
+// document's own esign_status, which stays as the simple single-signer
+// case. Status never includes "Voided" here (unlike EsignStatus) since a
+// signer being pulled from a document is handled by removing their row,
+// not by a terminal status.
+export type DocumentSignerStatus = "Not Sent" | "Sent" | "Viewed" | "Signed" | "Declined";
+
+export interface DocumentSigner {
+  id: string;
+  document_id: string;
+  signer_name: string;
+  signer_role: string | null;
+  signer_email: string | null;
+  sign_order: number;
+  status: DocumentSignerStatus;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface ActivityLogEntry {
   id: string;
   created_at: string;

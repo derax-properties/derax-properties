@@ -4,7 +4,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { Deal, CashBuyer, TitleCompany, DealStage } from "@/lib/types";
 import { recommendExitStrategy, calculateWholesaleProfit, calculateFixFlipProfit } from "@/lib/profitAnalysis";
 import { getSignedUrl } from "@/lib/storage";
-import type { GeneratedDocument } from "@/lib/types";
+import type { GeneratedDocument, DocumentSigner } from "@/lib/types";
 import {
   updateDeal,
   generatePurchaseAgreement,
@@ -13,6 +13,9 @@ import {
   runOneClickWorkflow,
   sendForSignature,
   updateDocumentEsignStatus,
+  addDocumentSigner,
+  updateSignerStatus,
+  removeDocumentSigner,
 } from "../actions";
 
 export const metadata = { title: "Deal Detail — DERAX CRM", robots: { index: false, follow: false } };
@@ -54,10 +57,17 @@ export default async function DealDetailPage({ params }: { params: { id: string 
     .order("created_at", { ascending: false });
 
   const GENERATED_DOCS_BUCKET = process.env.SUPABASE_GENERATED_DOCS_BUCKET || "generated-documents";
+  const documentIds = ((documents as GeneratedDocument[]) ?? []).map((doc) => doc.id);
+  const { data: allSigners } =
+    documentIds.length > 0
+      ? await supabase.from("document_signers").select("*").in("document_id", documentIds).order("sign_order", { ascending: true })
+      : { data: [] as DocumentSigner[] };
+
   const documentsWithUrls = await Promise.all(
     ((documents as GeneratedDocument[]) ?? []).map(async (doc) => ({
       ...doc,
       url: doc.storage_path ? await getSignedUrl(GENERATED_DOCS_BUCKET, doc.storage_path) : null,
+      signers: ((allSigners as DocumentSigner[]) ?? []).filter((s) => s.document_id === doc.id),
     }))
   );
 
@@ -177,16 +187,37 @@ export default async function DealDetailPage({ params }: { params: { id: string 
                   Deal Summary
                 </button>
               </form>
-              <form action={generateBuyerPackageWithId} className="flex items-center gap-1">
-                <input
-                  name="contact_line"
-                  type="text"
-                  placeholder="Custom contact line (optional)"
-                  className="focus-gold rounded-lg border border-ink/15 px-2 py-1 text-xs"
-                />
-                <button type="submit" className="focus-gold rounded-full border border-gold px-3 py-1.5 text-xs font-semibold text-gold-dark hover:bg-gold hover:text-ink">
-                  Buyer Package
-                </button>
+              <form action={generateBuyerPackageWithId} className="flex flex-col gap-1.5">
+                <div className="flex flex-wrap items-center gap-1">
+                  <input
+                    name="contact_line"
+                    type="text"
+                    placeholder="Custom contact line (optional)"
+                    className="focus-gold rounded-lg border border-ink/15 px-2 py-1 text-xs"
+                  />
+                  <button type="submit" className="focus-gold rounded-full border border-gold px-3 py-1.5 text-xs font-semibold text-gold-dark hover:bg-gold hover:text-ink">
+                    Buyer Package
+                  </button>
+                </div>
+                <div className="flex flex-wrap items-center gap-2.5 pl-0.5 text-[11px] text-ink/50">
+                  <span className="font-semibold uppercase tracking-wide text-ink/35">Include:</span>
+                  <label className="flex items-center gap-1">
+                    <input type="checkbox" name="include_overview" defaultChecked className="h-3 w-3 rounded" />
+                    Overview
+                  </label>
+                  <label className="flex items-center gap-1">
+                    <input type="checkbox" name="include_numbers" defaultChecked className="h-3 w-3 rounded" />
+                    Numbers
+                  </label>
+                  <label className="flex items-center gap-1">
+                    <input type="checkbox" name="include_photos" className="h-3 w-3 rounded" />
+                    Photos
+                  </label>
+                  <label className="flex items-center gap-1">
+                    <input type="checkbox" name="include_comps" className="h-3 w-3 rounded" />
+                    Comps
+                  </label>
+                </div>
               </form>
             </div>
 
@@ -259,6 +290,87 @@ export default async function DealDetailPage({ params }: { params: { id: string 
                         </form>
                       </>
                     )}
+                  </div>
+
+                  <div className="mt-2.5 rounded-lg border border-ink/10 bg-cream/30 p-2">
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-ink/35">
+                      Signers, in order {doc.signers.length > 1 ? "— each waits for the one before to sign" : ""}
+                    </p>
+                    {doc.signers.length === 0 && (
+                      <p className="mt-1 text-xs text-ink/30">
+                        No named signers — use the status above for a single-signer document, or add signers below for a signing order (e.g. seller then buyer).
+                      </p>
+                    )}
+                    <ol className="mt-1.5 flex flex-col gap-1.5">
+                      {doc.signers.map((signer, idx) => {
+                        const canSend = doc.signers.slice(0, idx).every((s) => s.status === "Signed");
+                        return (
+                          <li key={signer.id} className="flex flex-wrap items-center justify-between gap-1.5 text-xs">
+                            <span>
+                              <span className="font-semibold text-ink/70">
+                                #{signer.sign_order} {signer.signer_name}
+                              </span>
+                              {signer.signer_role && <span className="text-ink/40"> · {signer.signer_role}</span>}
+                            </span>
+                            <span className="flex items-center gap-1.5">
+                              <span
+                                className={
+                                  "rounded-full px-2 py-0.5 text-[10px] font-bold " +
+                                  (signer.status === "Signed"
+                                    ? "bg-emerald-100 text-emerald-700"
+                                    : signer.status === "Sent" || signer.status === "Viewed"
+                                    ? "bg-amber-100 text-amber-700"
+                                    : signer.status === "Declined"
+                                    ? "bg-red-100 text-red-700"
+                                    : "bg-ink/10 text-ink/50")
+                                }
+                              >
+                                {signer.status}
+                              </span>
+                              {signer.status === "Not Sent" && canSend && (
+                                <form action={updateSignerStatus.bind(null, signer.id, doc.id, params.id, "Sent")}>
+                                  <button type="submit" className="font-semibold text-gold-dark hover:underline">Send</button>
+                                </form>
+                              )}
+                              {signer.status === "Not Sent" && !canSend && (
+                                <span className="text-ink/30" title="Waiting on an earlier signer to sign first">Waiting…</span>
+                              )}
+                              {(signer.status === "Sent" || signer.status === "Viewed") && (
+                                <>
+                                  {signer.status === "Sent" && (
+                                    <form action={updateSignerStatus.bind(null, signer.id, doc.id, params.id, "Viewed")}>
+                                      <button type="submit" className="font-semibold text-ink/60 hover:underline">Viewed</button>
+                                    </form>
+                                  )}
+                                  <form action={updateSignerStatus.bind(null, signer.id, doc.id, params.id, "Signed")}>
+                                    <button type="submit" className="font-semibold text-emerald-700 hover:underline">Signed</button>
+                                  </form>
+                                  <form action={updateSignerStatus.bind(null, signer.id, doc.id, params.id, "Declined")}>
+                                    <button type="submit" className="font-semibold text-red-600 hover:underline">Declined</button>
+                                  </form>
+                                </>
+                              )}
+                              <form action={removeDocumentSigner.bind(null, signer.id, doc.id, params.id)}>
+                                <button type="submit" title="Remove signer" className="font-semibold text-ink/30 hover:text-red-600">
+                                  ×
+                                </button>
+                              </form>
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ol>
+                    <form action={addDocumentSigner.bind(null, doc.id, params.id)} className="mt-2 flex flex-wrap items-center gap-1">
+                      <input name="signer_name" placeholder="Signer name" className="focus-gold rounded-lg border border-ink/15 px-2 py-1 text-xs" />
+                      <input name="signer_role" placeholder="Role (e.g. Seller)" className="focus-gold rounded-lg border border-ink/15 px-2 py-1 text-xs" />
+                      <input name="signer_email" type="email" placeholder="Email (optional)" className="focus-gold rounded-lg border border-ink/15 px-2 py-1 text-xs" />
+                      <button
+                        type="submit"
+                        className="focus-gold rounded-full border border-gold px-2.5 py-1 text-xs font-semibold text-gold-dark hover:bg-gold hover:text-ink"
+                      >
+                        + Add Signer
+                      </button>
+                    </form>
                   </div>
                 </li>
               ))}
