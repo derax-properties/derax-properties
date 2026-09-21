@@ -5,7 +5,22 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { SellerSubmission, PipelineStage, DeadReason } from "@/lib/types";
 import { DEAD_REASONS } from "@/lib/types";
+import { getFollowUpStatus, daysOverdue } from "@/lib/followUp";
+import { formatDateOnly } from "@/lib/utils";
 import { PersonIcon, PinIcon, PhoneIcon, DotsIcon } from "./icons";
+
+function FollowUpBadge({ lead }: { lead: SellerSubmission }) {
+  const status = getFollowUpStatus(lead);
+  if (status === "No Follow-Up" || status === "Completed") return null;
+  const tint = status === "Overdue" ? "text-red-500" : status === "Due Today" ? "text-amber-600" : "text-ink/40";
+  return (
+    <p className={`mt-1.5 text-[11px] font-semibold ${tint}`}>
+      {status === "Overdue" && lead.next_follow_up_date
+        ? `Overdue ${daysOverdue(lead.next_follow_up_date)}d`
+        : `Follow up: ${lead.next_follow_up_date ? formatDateOnly(lead.next_follow_up_date) : ""}`}
+    </p>
+  );
+}
 
 const STAGES: PipelineStage[] = [
   "New Lead",
@@ -219,6 +234,7 @@ export function LeadsKanban({
                     {isDeadColumn && lead.dead_reason && (
                       <p className="mt-1.5 text-[11px] text-red-500/80">Reason: {lead.dead_reason}</p>
                     )}
+                    {!isDeadColumn && <FollowUpBadge lead={lead} />}
                   </Link>
                   {col.stage === "Qualified" && (
                     <Link

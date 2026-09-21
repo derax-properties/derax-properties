@@ -64,6 +64,15 @@ export interface SellerSubmission {
   motivation_override: boolean;
   dead_reason: DeadReason | string | null;
   dead_reason_note: string | null;
+  // Next Follow-Up is a DATE (never a specific time) so status can be
+  // computed as Overdue/Due Today/Upcoming purely by comparing dates.
+  // Completing a follow-up stamps follow_up_completed_at without clearing
+  // the date, so the history of what was due when isn't lost; scheduling
+  // the next one is a separate, explicit write.
+  next_follow_up_date: string | null;
+  follow_up_type: string | null;
+  follow_up_notes: string | null;
+  follow_up_completed_at: string | null;
   best_callback_time: string | null;
   preferred_contact_methods: string[] | null;
   possible_duplicate_of: string | null;

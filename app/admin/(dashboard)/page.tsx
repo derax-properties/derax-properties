@@ -2,7 +2,8 @@ import Link from "next/link";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { LeadStatus, SellerSubmission, Deal, DealStage } from "@/lib/types";
 import { StatusBadge } from "@/components/StatusBadge";
-import { formatDate } from "@/lib/utils";
+import { formatDate, formatDateOnly } from "@/lib/utils";
+import { getFollowUpStatus } from "@/lib/followUp";
 import { GroupIcon, FlameIcon, CalendarIcon, AlertClockIcon, DocumentIcon } from "@/components/admin/icons";
 
 const DEAL_STAGES: DealStage[] = [
@@ -35,6 +36,28 @@ export default async function AdminDashboardPage() {
     .limit(8);
 
   const { data: allLeads } = await supabase.from("seller_submissions").select("status, motivation_level, created_at");
+
+  const { data: followUpLeadsRaw } = await supabase
+    .from("seller_submissions")
+    .select("id, reference_number, first_name, last_name, next_follow_up_date, follow_up_type, follow_up_completed_at, pipeline_stage")
+    .not("next_follow_up_date", "is", null)
+    .neq("pipeline_stage", "Dead / Lost")
+    .order("next_follow_up_date", { ascending: true });
+
+  const followUpCounts = { overdue: 0, dueToday: 0, upcoming: 0 };
+  (followUpLeadsRaw ?? []).forEach((l) => {
+    const s = getFollowUpStatus(l as unknown as SellerSubmission);
+    if (s === "Overdue") followUpCounts.overdue++;
+    else if (s === "Due Today") followUpCounts.dueToday++;
+    else if (s === "Upcoming") followUpCounts.upcoming++;
+  });
+  const noFollowUpCount = (allLeads ?? []).length - (followUpLeadsRaw ?? []).length;
+  const upcomingFollowUps = (followUpLeadsRaw ?? [])
+    .filter((l) => {
+      const s = getFollowUpStatus(l as unknown as SellerSubmission);
+      return s === "Overdue" || s === "Due Today" || s === "Upcoming";
+    })
+    .slice(0, 6);
 
   const counts = SUMMARY_STATUSES.reduce<Record<string, number>>((acc, status) => {
     acc[status] = (allLeads ?? []).filter((l) => l.status === status).length;
@@ -76,6 +99,54 @@ export default async function AdminDashboardPage() {
         <StatTile icon={<FlameIcon className="h-5 w-5" />} value={hotLeads} label="Hot" tint="bg-red-50 text-red-600" />
         <StatTile icon={<CalendarIcon className="h-5 w-5" />} value={followUpLeads} label="Follow Up" tint="bg-sky-50 text-sky-600" />
         <StatTile icon={<AlertClockIcon className="h-5 w-5" />} value={overdueLeads} label="Overdue (3+ days)" tint="bg-amber-50 text-amber-600" />
+      </div>
+
+      <div className="mt-8 rounded-xl bg-white p-5 shadow-sm">
+        <div className="flex items-center gap-2.5">
+          <span className="crm-accent-soft-bg flex h-8 w-8 items-center justify-center rounded-lg">
+            <AlertClockIcon className="h-4 w-4" />
+          </span>
+          <h2 className="font-display text-lg font-semibold text-ink">Follow-Up Center</h2>
+        </div>
+
+        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <Link href="/admin/leads?followup=overdue" className="rounded-lg bg-red-50 p-3 hover:bg-red-100">
+            <p className="text-xl font-semibold text-red-600">{followUpCounts.overdue}</p>
+            <p className="mt-0.5 text-xs text-red-600/70">Overdue</p>
+          </Link>
+          <Link href="/admin/leads?followup=today" className="rounded-lg bg-amber-50 p-3 hover:bg-amber-100">
+            <p className="text-xl font-semibold text-amber-600">{followUpCounts.dueToday}</p>
+            <p className="mt-0.5 text-xs text-amber-600/70">Due Today</p>
+          </Link>
+          <Link href="/admin/leads?followup=upcoming" className="rounded-lg bg-sky-50 p-3 hover:bg-sky-100">
+            <p className="text-xl font-semibold text-sky-600">{followUpCounts.upcoming}</p>
+            <p className="mt-0.5 text-xs text-sky-600/70">Upcoming</p>
+          </Link>
+          <Link href="/admin/leads?followup=none" className="crm-accent-soft-bg rounded-lg p-3 hover:opacity-80">
+            <p className="text-xl font-semibold text-ink">{Math.max(noFollowUpCount, 0)}</p>
+            <p className="mt-0.5 text-xs text-ink/60">No Follow-Up</p>
+          </Link>
+        </div>
+
+        {upcomingFollowUps.length > 0 && (
+          <ul className="mt-4 flex flex-col divide-y divide-ink/5">
+            {upcomingFollowUps.map((l) => {
+              const s = getFollowUpStatus(l as unknown as SellerSubmission);
+              return (
+                <li key={l.id} className="flex items-center justify-between gap-3 rounded-lg py-2 px-2 text-sm hover:bg-cream/40">
+                  <Link href={`/admin/leads/${l.id}`} className="focus-gold font-medium text-gold-dark hover:underline">
+                    {l.first_name} {l.last_name} <span className="text-ink/40">({l.reference_number})</span>
+                  </Link>
+                  <span className={`text-xs font-semibold ${s === "Overdue" ? "text-red-500" : s === "Due Today" ? "text-amber-600" : "text-ink/50"}`}>
+                    {l.follow_up_type ? `${l.follow_up_type} · ` : ""}
+                    {l.next_follow_up_date ? formatDateOnly(l.next_follow_up_date) : ""}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        {upcomingFollowUps.length === 0 && <p className="mt-4 text-sm text-ink/40">Nothing overdue or due soon.</p>}
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">

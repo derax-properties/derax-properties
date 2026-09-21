@@ -14,7 +14,11 @@ import {
   estimateRepairsWithAIAction,
   addComp,
   deleteComp,
+  setFollowUp,
+  setFollowUpFromForm,
+  completeFollowUp,
 } from "./actions";
+import { FOLLOW_UP_TYPES, getFollowUpStatus, daysOverdue, dateOffset } from "@/lib/followUp";
 import { getPopulationForZip } from "@/lib/population";
 import { matchBuyersForLead, matchTier } from "@/lib/buyerMatching";
 import type { CashBuyer, BuyerZipCode, BuyerInvestmentCriteria, RepairItem, LeadComp } from "@/lib/types";
@@ -261,6 +265,8 @@ export default async function LeadDetailPage({
             </div>
           )}
         </div>
+
+        <FollowUpPanel lead={l} />
 
         <div id="underwriting" className="scroll-mt-24 rounded-xl bg-white p-5 shadow-sm">
           <h2 className="font-display text-lg font-semibold text-ink">Underwriting Snapshot</h2>
@@ -883,6 +889,87 @@ export default async function LeadDetailPage({
           </Panel>
         </div>
       </div>
+    </div>
+  );
+}
+
+const FOLLOW_UP_STATUS_TINT: Record<string, string> = {
+  Overdue: "bg-red-100 text-red-700",
+  "Due Today": "bg-amber-100 text-amber-700",
+  Upcoming: "bg-sky-100 text-sky-700",
+  Completed: "bg-emerald-100 text-emerald-700",
+  "No Follow-Up": "bg-ink/5 text-ink/40",
+};
+
+/**
+ * The follow-up date is a DATE only (never a time) per the correction —
+ * quick-pick buttons just write a computed YYYY-MM-DD, and "Complete"
+ * stamps follow_up_completed_at without touching the date so what was due
+ * stays visible as history. Status (Overdue/Due Today/Upcoming/Completed/
+ * No Follow-Up) is derived, never stored, so it can never drift out of
+ * sync with today's actual date.
+ */
+function FollowUpPanel({ lead }: { lead: SellerSubmission }) {
+  const status = getFollowUpStatus(lead);
+  const setFollowUpWithId = setFollowUp.bind(null, lead.id);
+  const setFollowUpFromFormWithId = setFollowUpFromForm.bind(null, lead.id);
+  const completeFollowUpWithId = completeFollowUp.bind(null, lead.id);
+
+  return (
+    <div className="rounded-xl bg-white p-5 shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="font-display text-lg font-semibold text-ink">Follow-Up</h2>
+        <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide ${FOLLOW_UP_STATUS_TINT[status]}`}>
+          {status === "Overdue" && lead.next_follow_up_date ? `Overdue · ${daysOverdue(lead.next_follow_up_date)}d` : status}
+        </span>
+      </div>
+
+      <p className="mt-2 text-sm text-ink/60">
+        {lead.next_follow_up_date ? (
+          <>
+            Next follow-up: <strong className="text-ink">{formatDateOnly(lead.next_follow_up_date)}</strong>
+            {lead.follow_up_type ? ` · ${lead.follow_up_type}` : ""}
+          </>
+        ) : (
+          "No follow-up scheduled."
+        )}
+        {lead.follow_up_notes && <span className="mt-1 block text-xs text-ink/40">{lead.follow_up_notes}</span>}
+      </p>
+
+      <div className="mt-3 flex flex-wrap gap-1.5">
+        <form action={setFollowUpWithId.bind(null, dateOffset(0), lead.follow_up_type, lead.follow_up_notes)}>
+          <button type="submit" className="focus-gold rounded-full border border-ink/15 px-3 py-1.5 text-xs font-semibold text-ink/70 hover:bg-ink/5">Today</button>
+        </form>
+        <form action={setFollowUpWithId.bind(null, dateOffset(1), lead.follow_up_type, lead.follow_up_notes)}>
+          <button type="submit" className="focus-gold rounded-full border border-ink/15 px-3 py-1.5 text-xs font-semibold text-ink/70 hover:bg-ink/5">Tomorrow</button>
+        </form>
+        <form action={setFollowUpWithId.bind(null, dateOffset(3), lead.follow_up_type, lead.follow_up_notes)}>
+          <button type="submit" className="focus-gold rounded-full border border-ink/15 px-3 py-1.5 text-xs font-semibold text-ink/70 hover:bg-ink/5">3 Days</button>
+        </form>
+        <form action={setFollowUpWithId.bind(null, dateOffset(7), lead.follow_up_type, lead.follow_up_notes)}>
+          <button type="submit" className="focus-gold rounded-full border border-ink/15 px-3 py-1.5 text-xs font-semibold text-ink/70 hover:bg-ink/5">7 Days</button>
+        </form>
+        <form action={completeFollowUpWithId}>
+          <button type="submit" className="focus-gold rounded-full bg-forest px-3 py-1.5 text-xs font-bold text-white hover:bg-forest/90">✓ Complete</button>
+        </form>
+        <form action={setFollowUpWithId.bind(null, null, null, null)}>
+          <button type="submit" className="focus-gold rounded-full border border-ink/15 px-3 py-1.5 text-xs font-semibold text-ink/40 hover:bg-ink/5">No Follow-Up</button>
+        </form>
+      </div>
+
+      <form action={setFollowUpFromFormWithId} className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <input name="date" type="date" defaultValue={lead.next_follow_up_date ?? ""} className="focus-gold rounded-lg border border-ink/15 px-3 py-1.5 text-sm" />
+        <select name="type" defaultValue={lead.follow_up_type ?? ""} className="focus-gold rounded-lg border border-ink/15 px-3 py-1.5 text-sm">
+          <option value="">Type —</option>
+          {FOLLOW_UP_TYPES.map((t) => (
+            <option key={t} value={t}>{t}</option>
+          ))}
+        </select>
+        <input name="notes" defaultValue={lead.follow_up_notes ?? ""} placeholder="Notes" className="focus-gold col-span-2 rounded-lg border border-ink/15 px-3 py-1.5 text-sm sm:col-span-1" />
+        <button type="submit" className="focus-gold rounded-full bg-gold px-4 py-1.5 text-xs font-semibold text-ink hover:bg-gold-light">
+          Save Custom Date
+        </button>
+      </form>
     </div>
   );
 }

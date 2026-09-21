@@ -8,17 +8,19 @@ import { LeadsKanban } from "./LeadsKanban";
 export function LeadsView({
   leads,
   initialSearch = "",
+  initialView,
   onAdvance,
   onMarkDead,
   onReopen,
 }: {
   leads: SellerSubmission[];
   initialSearch?: string;
+  initialView?: "table" | "board";
   onAdvance: (id: string, toStage: PipelineStage) => Promise<void>;
   onMarkDead: (id: string, reason: DeadReason | string, note: string | null) => Promise<void>;
   onReopen: (id: string, toStage?: PipelineStage) => Promise<void>;
 }) {
-  const [view, setView] = useState<"table" | "board">(initialSearch ? "table" : "board");
+  const [view, setView] = useState<"table" | "board">(initialView ?? (initialSearch ? "table" : "board"));
 
   return (
     <div>

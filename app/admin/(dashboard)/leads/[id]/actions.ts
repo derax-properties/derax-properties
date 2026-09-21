@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { getCurrentAdminProfile } from "@/lib/supabase/profile";
 import { getPopulationForZip } from "@/lib/population";
 import { REPAIR_CATEGORIES } from "@/lib/types";
 import { estimateRepairsWithAI } from "@/lib/aiRepairEstimate";
@@ -297,6 +298,80 @@ export async function deleteComp(sellerSubmissionId: string, compId: string) {
   const supabase = createServerSupabaseClient();
   await supabase.from("lead_comps").delete().eq("id", compId).eq("seller_submission_id", sellerSubmissionId);
   revalidatePath(`/admin/leads/${sellerSubmissionId}`);
+}
+
+/**
+ * Sets (or clears) next_follow_up_date. Called both by the quick-pick
+ * buttons (Today/Tomorrow/3 Days/7 Days/No Follow-Up — each just passes a
+ * date already computed client-side, since this is a DATE field with no
+ * time component) and by a custom date input. Scheduling a new date always
+ * clears follow_up_completed_at, since a freshly-set date is by definition
+ * not yet completed — otherwise a re-used lead would show "Completed" next
+ * to a brand-new due date, which would be actively misleading.
+ */
+export async function setFollowUp(id: string, date: string | null, type: string | null, notes: string | null) {
+  const supabase = createServerSupabaseClient();
+  const profile = await getCurrentAdminProfile();
+
+  await supabase
+    .from("seller_submissions")
+    .update({
+      next_follow_up_date: date,
+      follow_up_type: type,
+      follow_up_notes: notes?.trim() || null,
+      follow_up_completed_at: null,
+    })
+    .eq("id", id);
+
+  await supabase.from("activity_log").insert({
+    seller_submission_id: id,
+    actor_id: profile?.id ?? null,
+    actor_type: "user",
+    action: date ? `Follow-up scheduled for ${date}${type ? ` (${type})` : ""}` : "Follow-up cleared",
+  });
+
+  revalidatePath(`/admin/leads/${id}`);
+  revalidatePath("/admin/leads");
+  revalidatePath("/admin");
+}
+
+/** Same as setFollowUp, but reads its arguments from a submitted form (the custom-date input) instead of positional args. */
+export async function setFollowUpFromForm(id: string, formData: FormData) {
+  const date = formData.get("date");
+  const type = formData.get("type");
+  const notes = formData.get("notes");
+  await setFollowUp(
+    id,
+    typeof date === "string" && date ? date : null,
+    typeof type === "string" && type ? type : null,
+    typeof notes === "string" ? notes : null
+  );
+}
+
+/**
+ * Marks today's follow-up done without touching next_follow_up_date — the
+ * date stays visible as history of what was due, and the lead drops off
+ * "due today"/"overdue" lists because getFollowUpStatus() checks this
+ * timestamp first. The admin/VA schedules the next one separately via
+ * setFollowUp, exactly as the correction describes (complete, then pick
+ * the next date — never silently auto-advanced).
+ */
+export async function completeFollowUp(id: string) {
+  const supabase = createServerSupabaseClient();
+  const profile = await getCurrentAdminProfile();
+
+  await supabase.from("seller_submissions").update({ follow_up_completed_at: new Date().toISOString() }).eq("id", id);
+
+  await supabase.from("activity_log").insert({
+    seller_submission_id: id,
+    actor_id: profile?.id ?? null,
+    actor_type: "user",
+    action: "Follow-up completed",
+  });
+
+  revalidatePath(`/admin/leads/${id}`);
+  revalidatePath("/admin/leads");
+  revalidatePath("/admin");
 }
 
 export async function logActivity(sellerSubmissionId: string, actorId: string | null, action: string) {
