@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
-import { HouseIllustration } from "@/components/HouseIllustration";
-
-const PODIO_WEBFORM_URL = "https://podio.com/webforms/30844013/2624806";
+import { SellPropertyWizard } from "./SellPropertyWizard";
 
 export const metadata: Metadata = {
   title: "Sell Your Property",
@@ -29,26 +27,8 @@ export default function SellYourPropertyPage() {
           </p>
         </div>
 
-        <div className="mx-auto mt-10 max-w-2xl overflow-hidden rounded-2xl bg-white shadow-card sm:grid sm:grid-cols-2 sm:items-center">
-          <HouseIllustration className="hidden h-full w-full sm:block" />
-          <div className="p-8 text-center sm:p-10">
-            <p className="font-display text-xl font-semibold text-forest">
-              Submit Your Property Details
-            </p>
-            <p className="mt-3 text-sm text-ink/60">
-              Click below to open our secure property submission form. It only takes a couple
-              of minutes, and your information goes directly to our team.
-            </p>
-            <a
-              href={PODIO_WEBFORM_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="focus-gold mt-6 inline-flex w-full items-center justify-center rounded-full bg-forest px-6 py-3.5 text-sm font-semibold text-cream transition-colors hover:bg-forest-light sm:w-auto"
-            >
-              Submit Your Property →
-            </a>
-            <p className="mt-3 text-xs text-ink/40">Opens in a new tab.</p>
-          </div>
+        <div className="mx-auto mt-10 max-w-3xl">
+          <SellPropertyWizard />
         </div>
       </div>
     </section>
