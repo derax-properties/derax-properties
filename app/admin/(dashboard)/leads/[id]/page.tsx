@@ -330,7 +330,7 @@ export default async function LeadDetailPage({
               <div>
                 <h3 className="text-sm font-semibold text-ink">Repair Estimate Breakdown</h3>
                 <p className="mt-1 text-xs text-ink/40">
-                  Enter a cost per category — the total replaces "Repair Estimate ($)" above automatically.
+                  Enter a cost per category — the total replaces &quot;Repair Estimate ($)&quot; above automatically.
                 </p>
               </div>
               <form action={estimateRepairsWithAIWithId}>
