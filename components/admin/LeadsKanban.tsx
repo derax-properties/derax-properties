@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import type { SellerSubmission, PipelineStage } from "@/lib/types";
+import type { SellerSubmission, PipelineStage, DeadReason } from "@/lib/types";
+import { DEAD_REASONS } from "@/lib/types";
 import { PersonIcon, PinIcon, PhoneIcon, DotsIcon } from "./icons";
 
 const STAGES: PipelineStage[] = [
@@ -11,20 +12,26 @@ const STAGES: PipelineStage[] = [
   "Contacted",
   "Qualified",
   "Offer Made",
+  "Negotiating",
   "Under Contract",
+  "Disposition",
   "Closed",
-  "Dead",
+  "Dead / Lost",
 ];
 
 // What "Advance" moves a lead to from each stage. Stages with no entry here
-// (Closed, Dead) are end states — no automatic next step, matching the
-// pipeline preview's rule that only forward-progress stages get a button.
+// (Closed, Dead / Lost) are end states — no automatic next step, matching
+// the pipeline preview's rule that only forward-progress stages get a
+// button. Dead / Lost is reachable from ANY stage via the separate
+// "Mark Dead / Lost" action below, not through this forward chain.
 const NEXT_STAGE: Partial<Record<PipelineStage, PipelineStage>> = {
   "New Lead": "Contacted",
   Contacted: "Qualified",
   Qualified: "Offer Made",
-  "Offer Made": "Under Contract",
-  "Under Contract": "Closed",
+  "Offer Made": "Negotiating",
+  Negotiating: "Under Contract",
+  "Under Contract": "Disposition",
+  Disposition: "Closed",
 };
 
 const STAGE_ACCENT: Record<PipelineStage, string> = {
@@ -32,9 +39,11 @@ const STAGE_ACCENT: Record<PipelineStage, string> = {
   Contacted: "bg-violet-500",
   Qualified: "bg-emerald-500",
   "Offer Made": "bg-amber-500",
+  Negotiating: "bg-orange-500",
   "Under Contract": "bg-indigo-500",
+  Disposition: "bg-teal-500",
   Closed: "bg-ink/40",
-  Dead: "bg-red-400",
+  "Dead / Lost": "bg-red-400",
 };
 
 function motivationDot(level: SellerSubmission["motivation_level"]) {
@@ -45,7 +54,7 @@ function motivationDot(level: SellerSubmission["motivation_level"]) {
 }
 
 function MotivationPill({ level }: { level: SellerSubmission["motivation_level"] }) {
-  if (!level) return null;
+  if (!level || level === "Unknown") return null;
   const tint = level === "Hot" ? "bg-red-100 text-red-700" : level === "Warm" ? "bg-amber-100 text-amber-700" : "bg-sky-100 text-sky-700";
   return <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${tint}`}>{level}</span>;
 }
@@ -55,6 +64,15 @@ function SourcePill({ source }: { source: SellerSubmission["lead_source"] }) {
   return (
     <span className="rounded-full border border-ink/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ink/50">
       {source}
+    </span>
+  );
+}
+
+function TypePill({ type }: { type: SellerSubmission["lead_type"] }) {
+  if (!type) return null;
+  return (
+    <span className="rounded-full bg-forest/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-forest">
+      {type}
     </span>
   );
 }
@@ -70,18 +88,30 @@ function SourcePill({ source }: { source: SellerSubmission["lead_source"] }) {
  * sample data. Moving a card plays the same slide-out/slide-in transition
  * as that preview (see the crm-kanban-card-* classes in globals.css) so it
  * reads as the lead actually moving, not the board just re-rendering.
+ *
+ * Dead / Lost is deliberately NOT part of the forward chain above — a lead
+ * can die from any stage, so it gets its own "Mark Dead / Lost" action that
+ * requires picking a reason first (never a bare stage change), and a
+ * Dead / Lost card gets a "Reopen" button instead of an Advance button.
  */
 export function LeadsKanban({
   leads,
   onAdvance,
+  onMarkDead,
+  onReopen,
 }: {
   leads: SellerSubmission[];
   onAdvance: (id: string, toStage: PipelineStage) => Promise<void>;
+  onMarkDead: (id: string, reason: DeadReason | string, note: string | null) => Promise<void>;
+  onReopen: (id: string, toStage?: PipelineStage) => Promise<void>;
 }) {
   const router = useRouter();
   const [localLeads, setLocalLeads] = useState(leads);
   const [movingOutId, setMovingOutId] = useState<string | null>(null);
   const [justMovedId, setJustMovedId] = useState<string | null>(null);
+  const [deadPromptId, setDeadPromptId] = useState<string | null>(null);
+  const [deadReason, setDeadReason] = useState<string>(DEAD_REASONS[0]);
+  const [deadNote, setDeadNote] = useState("");
 
   // Keep local state in sync whenever the server sends fresh data (e.g.
   // after router.refresh(), or a plain page reload) — otherwise this
@@ -90,24 +120,40 @@ export function LeadsKanban({
     setLocalLeads(leads);
   }, [leads]);
 
-  function handleAdvance(lead: SellerSubmission, toStage: PipelineStage) {
-    setMovingOutId(lead.id);
-    // Matches the 220ms slide-out used in the pipeline preview before the
-    // card actually changes column.
+  function moveOptimistically(id: string, toStage: PipelineStage, previousStage: SellerSubmission["pipeline_stage"]) {
+    setMovingOutId(id);
     setTimeout(() => {
-      setLocalLeads((prev) => prev.map((l) => (l.id === lead.id ? { ...l, pipeline_stage: toStage } : l)));
+      setLocalLeads((prev) => prev.map((l) => (l.id === id ? { ...l, pipeline_stage: toStage } : l)));
       setMovingOutId(null);
-      setJustMovedId(lead.id);
+      setJustMovedId(id);
       setTimeout(() => setJustMovedId(null), 400);
     }, 220);
 
+    return () =>
+      setLocalLeads((prev) => prev.map((l) => (l.id === id ? { ...l, pipeline_stage: previousStage } : l)));
+  }
+
+  function handleAdvance(lead: SellerSubmission, toStage: PipelineStage) {
+    const rollback = moveOptimistically(lead.id, toStage, lead.pipeline_stage);
     onAdvance(lead.id, toStage)
       .then(() => router.refresh())
-      .catch(() => {
-        // Roll back the optimistic move if the write actually failed —
-        // never leave the board showing a stage the database doesn't have.
-        setLocalLeads((prev) => prev.map((l) => (l.id === lead.id ? { ...l, pipeline_stage: lead.pipeline_stage } : l)));
-      });
+      .catch(rollback);
+  }
+
+  function handleConfirmDead(lead: SellerSubmission) {
+    const rollback = moveOptimistically(lead.id, "Dead / Lost", lead.pipeline_stage);
+    onMarkDead(lead.id, deadReason, deadNote.trim() || null)
+      .then(() => router.refresh())
+      .catch(rollback);
+    setDeadPromptId(null);
+    setDeadNote("");
+  }
+
+  function handleReopen(lead: SellerSubmission) {
+    const rollback = moveOptimistically(lead.id, "Contacted", lead.pipeline_stage);
+    onReopen(lead.id, "Contacted")
+      .then(() => router.refresh())
+      .catch(rollback);
   }
 
   const columns = STAGES.map((stage) => ({
@@ -129,6 +175,7 @@ export function LeadsKanban({
           <div className="flex flex-col gap-2">
             {col.items.map((lead) => {
               const nextStage = NEXT_STAGE[col.stage];
+              const isDeadColumn = col.stage === "Dead / Lost";
               return (
                 <div
                   key={lead.id}
@@ -162,11 +209,15 @@ export function LeadsKanban({
                         {lead.asking_price}
                       </div>
                     )}
-                    {(lead.lead_source || lead.motivation_level) && (
+                    {(lead.lead_source || lead.lead_type || lead.motivation_level) && (
                       <div className="mt-2 flex flex-wrap items-center gap-1.5">
                         <SourcePill source={lead.lead_source} />
+                        <TypePill type={lead.lead_type} />
                         <MotivationPill level={lead.motivation_level} />
                       </div>
+                    )}
+                    {isDeadColumn && lead.dead_reason && (
+                      <p className="mt-1.5 text-[11px] text-red-500/80">Reason: {lead.dead_reason}</p>
                     )}
                   </Link>
                   {col.stage === "Qualified" && (
@@ -174,7 +225,7 @@ export function LeadsKanban({
                       href={`/admin/leads/${lead.id}#underwriting`}
                       className="focus-gold mt-2.5 block w-full rounded-full border border-gold bg-gold/10 px-3 py-1.5 text-center text-[11px] font-bold text-gold-dark hover:bg-gold/20"
                     >
-                      Go to Underwriting →
+                      Underwrite Deal →
                     </Link>
                   )}
                   {nextStage && (
@@ -184,6 +235,63 @@ export function LeadsKanban({
                       className="focus-gold mt-2 w-full rounded-full bg-forest px-3 py-1.5 text-[11px] font-bold text-white hover:bg-forest/90"
                     >
                       {nextStage === "Closed" ? "Close Deal →" : `Mark ${nextStage} →`}
+                    </button>
+                  )}
+                  {isDeadColumn ? (
+                    <button
+                      type="button"
+                      onClick={() => handleReopen(lead)}
+                      className="focus-gold mt-2 w-full rounded-full border border-ink/15 px-3 py-1.5 text-[11px] font-bold text-ink/60 hover:bg-ink/5"
+                    >
+                      ↺ Reopen Lead
+                    </button>
+                  ) : deadPromptId === lead.id ? (
+                    <div className="mt-2 flex flex-col gap-1.5 rounded-lg border border-red-200 bg-red-50 p-2">
+                      <select
+                        value={deadReason}
+                        onChange={(e) => setDeadReason(e.target.value)}
+                        className="focus-gold rounded border border-red-200 bg-white px-2 py-1 text-[11px]"
+                      >
+                        {DEAD_REASONS.map((r) => (
+                          <option key={r} value={r}>
+                            {r}
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        value={deadNote}
+                        onChange={(e) => setDeadNote(e.target.value)}
+                        placeholder="Optional note"
+                        className="focus-gold rounded border border-red-200 bg-white px-2 py-1 text-[11px]"
+                      />
+                      <div className="flex gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => handleConfirmDead(lead)}
+                          className="focus-gold flex-1 rounded-full bg-red-500 px-2 py-1 text-[11px] font-bold text-white hover:bg-red-600"
+                        >
+                          Confirm
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDeadPromptId(null)}
+                          className="focus-gold rounded-full border border-red-200 px-2 py-1 text-[11px] font-semibold text-red-500"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDeadReason(DEAD_REASONS[0]);
+                        setDeadNote("");
+                        setDeadPromptId(lead.id);
+                      }}
+                      className="focus-gold mt-1.5 w-full text-center text-[10px] font-semibold uppercase tracking-wide text-red-400/70 hover:text-red-500"
+                    >
+                      Mark Dead / Lost
                     </button>
                   )}
                 </div>

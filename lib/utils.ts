@@ -16,6 +16,35 @@ export function formatDate(value: string): string {
   }).format(new Date(value));
 }
 
+export function formatDateOnly(value: string): string {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(value));
+}
+
+/**
+ * "3 months ago" style relative time for a comp's sale date (or anything
+ * else date-only). Deliberately coarse — this is for a quick read of how
+ * stale a comp is while underwriting, not a precise duration.
+ */
+export function formatRelativeTime(value: string): string {
+  const then = new Date(value + (value.length <= 10 ? "T00:00:00Z" : ""));
+  const now = new Date();
+  const diffMs = now.getTime() - then.getTime();
+  const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffDays <= 0) return "Today";
+  if (diffDays === 1) return "1 day ago";
+  if (diffDays < 30) return `${diffDays} days ago`;
+  const diffMonths = Math.round(diffDays / 30.44);
+  if (diffMonths < 12) return diffMonths === 1 ? "1 month ago" : `${diffMonths} months ago`;
+  const diffYears = Math.round(diffMonths / 12);
+  return diffYears === 1 ? "1 year ago" : `${diffYears} years ago`;
+}
+
 export function slugify(input: string): string {
   return input
     .toLowerCase()

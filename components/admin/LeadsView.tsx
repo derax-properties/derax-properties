@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { SellerSubmission, PipelineStage } from "@/lib/types";
+import type { SellerSubmission, PipelineStage, DeadReason } from "@/lib/types";
 import { LeadsTable } from "./LeadsTable";
 import { LeadsKanban } from "./LeadsKanban";
 
@@ -9,10 +9,14 @@ export function LeadsView({
   leads,
   initialSearch = "",
   onAdvance,
+  onMarkDead,
+  onReopen,
 }: {
   leads: SellerSubmission[];
   initialSearch?: string;
   onAdvance: (id: string, toStage: PipelineStage) => Promise<void>;
+  onMarkDead: (id: string, reason: DeadReason | string, note: string | null) => Promise<void>;
+  onReopen: (id: string, toStage?: PipelineStage) => Promise<void>;
 }) {
   const [view, setView] = useState<"table" | "board">(initialSearch ? "table" : "board");
 
@@ -33,7 +37,7 @@ export function LeadsView({
         </button>
       </div>
       {view === "board" ? (
-        <LeadsKanban leads={leads} onAdvance={onAdvance} />
+        <LeadsKanban leads={leads} onAdvance={onAdvance} onMarkDead={onMarkDead} onReopen={onReopen} />
       ) : (
         <LeadsTable leads={leads} initialSearch={initialSearch} />
       )}

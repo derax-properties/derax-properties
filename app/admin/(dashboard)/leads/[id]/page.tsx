@@ -12,18 +12,16 @@ import {
   updateUnderwriting,
   updateRepairItems,
   estimateRepairsWithAIAction,
+  addComp,
+  deleteComp,
 } from "./actions";
 import { getPopulationForZip } from "@/lib/population";
 import { matchBuyersForLead, matchTier } from "@/lib/buyerMatching";
-import type { CashBuyer, BuyerZipCode, BuyerInvestmentCriteria, RepairItem } from "@/lib/types";
-import { REPAIR_CATEGORIES } from "@/lib/types";
+import type { CashBuyer, BuyerZipCode, BuyerInvestmentCriteria, RepairItem, LeadComp } from "@/lib/types";
+import { REPAIR_CATEGORIES, PIPELINE_STAGES, MOTIVATION_LEVELS, LEAD_SOURCES, LEAD_TYPES, DEAD_REASONS } from "@/lib/types";
 import { createDeal } from "../../deals/actions";
 import { calculateMAO } from "@/lib/profitAnalysis";
-
-const PIPELINE_STAGES = ["New Lead", "Contacted", "Qualified", "Offer Made", "Under Contract", "Closed", "Dead"];
-const MOTIVATION_LEVELS = ["Hot", "Warm", "Cold"];
-const LEAD_SOURCES = ["Website", "VA Entry", "Self-Entered", "Auction", "Referral", "Other"];
-const LEAD_TYPES = ["Off-Market", "On-Market", "Trustee Sale", "Probate", "Pre-Foreclosure", "Other"];
+import { formatDateOnly, formatRelativeTime } from "@/lib/utils";
 
 export const metadata = { title: "Lead Detail", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
@@ -92,8 +90,30 @@ export default async function LeadDetailPage({
   for (const r of (repairItemRows as RepairItem[]) ?? []) {
     repairCostByCategory.set(r.category, r.cost);
   }
+  const customRepairCategories = [...repairCostByCategory.keys()].filter(
+    (c) => !(REPAIR_CATEGORIES as readonly string[]).includes(c)
+  );
   const updateRepairItemsWithId = updateRepairItems.bind(null, params.id);
   const estimateRepairsWithAIWithId = estimateRepairsWithAIAction.bind(null, params.id);
+
+  const { data: compRows } = await supabase
+    .from("lead_comps")
+    .select("*")
+    .eq("seller_submission_id", params.id)
+    .order("sale_date", { ascending: false, nullsFirst: false });
+  const comps = (compRows as LeadComp[]) ?? [];
+  const compPrices = comps.map((c) => c.sale_price).filter((p): p is number => typeof p === "number");
+  const avgCompPrice = compPrices.length ? compPrices.reduce((s, p) => s + p, 0) / compPrices.length : 0;
+  const sortedPrices = [...compPrices].sort((a, b) => a - b);
+  const medianCompPrice = sortedPrices.length
+    ? sortedPrices.length % 2 === 1
+      ? sortedPrices[(sortedPrices.length - 1) / 2]
+      : (sortedPrices[sortedPrices.length / 2 - 1] + sortedPrices[sortedPrices.length / 2]) / 2
+    : 0;
+  const pricesPerSqft = comps
+    .filter((c) => c.sale_price && c.square_feet)
+    .map((c) => (c.sale_price as number) / (c.square_feet as number));
+  const avgPricePerSqft = pricesPerSqft.length ? pricesPerSqft.reduce((s, p) => s + p, 0) / pricesPerSqft.length : 0;
 
   const { data: activeBuyers } = await supabase.from("cash_buyers").select("*").eq("status", "Active");
   const buyerIds = (activeBuyers ?? []).map((b) => b.id);
@@ -326,6 +346,105 @@ export default async function LeadDetailPage({
           </form>
 
           <div className="mt-5 border-t border-ink/10 pt-4">
+            <h3 className="text-sm font-semibold text-ink">Comparable Sales</h3>
+            {comps.length > 0 ? (
+              <>
+                <div className="mt-3 overflow-x-auto">
+                  <table className="w-full min-w-[640px] text-left text-xs">
+                    <thead>
+                      <tr className="text-ink/40">
+                        <th className="pb-1.5 pr-3 font-semibold">Address</th>
+                        <th className="pb-1.5 pr-3 font-semibold">Sale Price</th>
+                        <th className="pb-1.5 pr-3 font-semibold">Sale Date</th>
+                        <th className="pb-1.5 pr-3 font-semibold">Bd/Ba</th>
+                        <th className="pb-1.5 pr-3 font-semibold">Sq Ft</th>
+                        <th className="pb-1.5 pr-3 font-semibold">Dist.</th>
+                        <th className="pb-1.5 pr-3 font-semibold">Rating</th>
+                        <th className="pb-1.5"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {comps.map((c) => (
+                        <tr key={c.id} className="border-t border-ink/5">
+                          <td className="py-1.5 pr-3 text-ink">{c.address}</td>
+                          <td className="py-1.5 pr-3 font-semibold text-ink">{c.sale_price ? `$${c.sale_price.toLocaleString()}` : "—"}</td>
+                          <td className="py-1.5 pr-3 text-ink/60">
+                            {c.sale_date ? (
+                              <>
+                                {formatDateOnly(c.sale_date)}
+                                <span className="block text-[10px] text-ink/35">{formatRelativeTime(c.sale_date)}</span>
+                              </>
+                            ) : (
+                              "—"
+                            )}
+                          </td>
+                          <td className="py-1.5 pr-3 text-ink/60">{c.bedrooms ?? "—"}/{c.bathrooms ?? "—"}</td>
+                          <td className="py-1.5 pr-3 text-ink/60">{c.square_feet?.toLocaleString() ?? "—"}</td>
+                          <td className="py-1.5 pr-3 text-ink/60">{c.distance_miles ? `${c.distance_miles} mi` : "—"}</td>
+                          <td className="py-1.5 pr-3">
+                            {c.comp_rating && (
+                              <span
+                                className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
+                                  c.comp_rating === "Strong" ? "bg-emerald-100 text-emerald-700" : c.comp_rating === "Fair" ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"
+                                }`}
+                              >
+                                {c.comp_rating}
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-1.5 text-right">
+                            <form action={deleteComp.bind(null, l.id, c.id)}>
+                              <button type="submit" className="focus-gold text-[11px] font-semibold text-red-400 hover:text-red-600">
+                                Remove
+                              </button>
+                            </form>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <p className="mt-2 text-[11px] text-ink/40">
+                  Avg sale price: <strong className="text-ink/60">${Math.round(avgCompPrice).toLocaleString()}</strong> · Median: <strong className="text-ink/60">${Math.round(medianCompPrice).toLocaleString()}</strong>
+                  {avgPricePerSqft ? (
+                    <>
+                      {" "}
+                      · Avg $/sq ft: <strong className="text-ink/60">${avgPricePerSqft.toFixed(0)}</strong>
+                    </>
+                  ) : null}
+                </p>
+              </>
+            ) : (
+              <p className="mt-2 text-xs text-ink/40">No comps added yet.</p>
+            )}
+
+            <form action={addComp.bind(null, l.id)} className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <input name="address" placeholder="Comp address *" required className="focus-gold col-span-2 rounded-lg border border-ink/15 px-2.5 py-1.5 text-xs sm:col-span-1" />
+              <input name="sale_price" type="number" placeholder="Sale price" className="focus-gold rounded-lg border border-ink/15 px-2.5 py-1.5 text-xs" />
+              <input name="sale_date" type="date" className="focus-gold rounded-lg border border-ink/15 px-2.5 py-1.5 text-xs" />
+              <input name="bedrooms" type="number" placeholder="Beds" className="focus-gold rounded-lg border border-ink/15 px-2.5 py-1.5 text-xs" />
+              <input name="bathrooms" type="number" step="0.5" placeholder="Baths" className="focus-gold rounded-lg border border-ink/15 px-2.5 py-1.5 text-xs" />
+              <input name="square_feet" type="number" placeholder="Sq ft" className="focus-gold rounded-lg border border-ink/15 px-2.5 py-1.5 text-xs" />
+              <input name="lot_size" placeholder="Lot size" className="focus-gold rounded-lg border border-ink/15 px-2.5 py-1.5 text-xs" />
+              <input name="distance_miles" type="number" step="0.1" placeholder="Distance (mi)" className="focus-gold rounded-lg border border-ink/15 px-2.5 py-1.5 text-xs" />
+              <select name="comp_rating" defaultValue="" className="focus-gold rounded-lg border border-ink/15 px-2.5 py-1.5 text-xs">
+                <option value="">Rating —</option>
+                <option value="Strong">Strong</option>
+                <option value="Fair">Fair</option>
+                <option value="Weak">Weak</option>
+              </select>
+              <input name="condition" placeholder="Condition" className="focus-gold rounded-lg border border-ink/15 px-2.5 py-1.5 text-xs" />
+              <input name="notes" placeholder="Notes" className="focus-gold col-span-2 rounded-lg border border-ink/15 px-2.5 py-1.5 text-xs sm:col-span-2" />
+              <button type="submit" className="focus-gold col-span-2 rounded-full bg-forest px-4 py-1.5 text-xs font-semibold text-white hover:bg-forest/90 sm:col-span-1">
+                + Add Comp
+              </button>
+            </form>
+            <p className="mt-2 text-[11px] text-ink/35">
+              Manual comps only — no live comparable-sales data source is connected. Wire up a property-data API later and imported comps will show separately from these.
+            </p>
+          </div>
+
+          <div className="mt-5 border-t border-ink/10 pt-4">
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div>
                 <h3 className="text-sm font-semibold text-ink">Repair Estimate Breakdown</h3>
@@ -368,6 +487,31 @@ export default async function LeadDetailPage({
                   />
                 </div>
               ))}
+              {customRepairCategories.map((category) => (
+                <div key={category}>
+                  <label htmlFor={`repair_${category}`} className="text-xs font-medium text-ink/60">
+                    {category} <span className="text-ink/30">(custom)</span>
+                  </label>
+                  <input
+                    id={`repair_${category}`}
+                    name={`repair_${category}`}
+                    type="number"
+                    step="100"
+                    min="0"
+                    defaultValue={repairCostByCategory.get(category) ?? ""}
+                    placeholder="0"
+                    className="focus-gold mt-1 w-full rounded-lg border border-ink/15 px-3 py-1.5 text-sm"
+                  />
+                </div>
+              ))}
+              <div className="col-span-2 rounded-lg border border-dashed border-ink/15 p-2 sm:col-span-3">
+                <p className="text-xs font-medium text-ink/60">+ Add Repair Item</p>
+                <div className="mt-1.5 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  <input name="repair_new_name" placeholder="Category name" className="focus-gold rounded-lg border border-ink/15 px-3 py-1.5 text-sm sm:col-span-2" />
+                  <input name="repair_new_cost" type="number" step="100" min="0" placeholder="Cost" className="focus-gold rounded-lg border border-ink/15 px-3 py-1.5 text-sm" />
+                  <input name="repair_new_notes" placeholder="Notes (optional)" className="focus-gold rounded-lg border border-ink/15 px-3 py-1.5 text-sm" />
+                </div>
+              </div>
               <button
                 type="submit"
                 className="focus-gold col-span-2 mt-1 self-end rounded-full bg-forest px-5 py-2 text-xs font-semibold text-white hover:bg-forest/90 sm:col-span-3"
@@ -588,6 +732,10 @@ export default async function LeadDetailPage({
                       <option key={m} value={m}>{m}</option>
                     ))}
                   </select>
+                  <label className="mt-1.5 flex items-center gap-1.5 text-xs text-ink/50">
+                    <input type="checkbox" name="motivation_override" value="true" defaultChecked={l.motivation_override} className="focus-gold rounded" />
+                    Manual override (don&apos;t let the timeline auto-calculate this)
+                  </label>
                 </div>
                 <div>
                   <label htmlFor="lead_source" className="text-sm font-medium text-ink/70">
@@ -622,6 +770,29 @@ export default async function LeadDetailPage({
                   </select>
                 </div>
               </div>
+              {l.pipeline_stage === "Dead / Lost" && (
+                <div className="rounded-lg border border-red-200 bg-red-50 p-3">
+                  <p className="text-xs font-bold uppercase tracking-wide text-red-500">Dead / Lost Reason</p>
+                  <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <select
+                      name="dead_reason"
+                      defaultValue={l.dead_reason ?? ""}
+                      className="focus-gold rounded-lg border border-red-200 bg-white px-3 py-2 text-sm"
+                    >
+                      <option value="">—</option>
+                      {DEAD_REASONS.map((r) => (
+                        <option key={r} value={r}>{r}</option>
+                      ))}
+                    </select>
+                    <input
+                      name="dead_reason_note"
+                      defaultValue={l.dead_reason_note ?? ""}
+                      placeholder="Optional note"
+                      className="focus-gold rounded-lg border border-red-200 bg-white px-3 py-2 text-sm"
+                    />
+                  </div>
+                </div>
+              )}
               <div>
                 <label htmlFor="best_callback_time" className="text-sm font-medium text-ink/70">
                   Best Callback Time

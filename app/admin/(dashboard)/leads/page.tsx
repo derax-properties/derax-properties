@@ -4,7 +4,7 @@ import type { SellerSubmission } from "@/lib/types";
 import { LeadsView } from "@/components/admin/LeadsView";
 import { PageHeader } from "@/components/admin/PageHeader";
 import { GroupIcon } from "@/components/admin/icons";
-import { advanceLeadStage } from "./actions";
+import { advanceLeadStage, markLeadDead, reopenLead } from "./actions";
 
 export const metadata = { title: "Seller Leads", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
@@ -36,6 +36,8 @@ export default async function AdminLeadsPage({ searchParams }: { searchParams: {
           leads={(data as SellerSubmission[]) ?? []}
           initialSearch={searchParams.search ?? ""}
           onAdvance={advanceLeadStage}
+          onMarkDead={markLeadDead}
+          onReopen={reopenLead}
         />
       </div>
     </div>

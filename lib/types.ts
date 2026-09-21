@@ -58,6 +58,12 @@ export interface SellerSubmission {
   lead_type: LeadType | null;
   pipeline_stage: PipelineStage | null;
   motivation_level: MotivationLevel | null;
+  // true once the admin/VA has manually chosen motivation_level themselves —
+  // guards against an automatic timeline->motivation calculation silently
+  // overwriting a deliberate human judgment call on a later save.
+  motivation_override: boolean;
+  dead_reason: DeadReason | string | null;
+  dead_reason_note: string | null;
   best_callback_time: string | null;
   preferred_contact_methods: string[] | null;
   possible_duplicate_of: string | null;
@@ -183,10 +189,70 @@ export interface AdminInvitation {
 // Lead pipeline enrichment fields (Phase 1) — kept as their own fields,
 // never merged into `status` or `notes`.
 // ---------------------------------------------------------------------------
-export type LeadSource = "Website" | "VA Entry" | "Self-Entered" | "Auction" | "Referral" | "Other";
-export type LeadType = "Off-Market" | "On-Market" | "Trustee Sale" | "Probate" | "Pre-Foreclosure" | "Other";
-export type PipelineStage = "New Lead" | "Contacted" | "Qualified" | "Offer Made" | "Under Contract" | "Closed" | "Dead";
-export type MotivationLevel = "Hot" | "Warm" | "Cold";
+export const LEAD_SOURCES = [
+  "Website",
+  "VA Entry",
+  "Self-Entered",
+  "Cold Call",
+  "FSBO",
+  "Referral",
+  "Public Records",
+  "Real Estate Agent",
+  "Direct Mail",
+  "Other",
+] as const;
+export type LeadSource = (typeof LEAD_SOURCES)[number];
+
+export const LEAD_TYPES = [
+  "Off-Market",
+  "On-Market",
+  "Trustee Sale",
+  "Probate",
+  "Pre-Foreclosure",
+  "Auction",
+  "Tax Delinquent",
+  "Vacant",
+  "Absentee Owner",
+  "Tired Landlord",
+  "Divorce",
+  "Code Violation",
+  "FSBO",
+  "Inherited Property",
+  "Other",
+] as const;
+export type LeadType = (typeof LEAD_TYPES)[number];
+
+// New Lead -> Contacted -> Qualified -> Offer Made -> Negotiating ->
+// Under Contract -> Disposition -> Closed, with Dead / Lost reachable from
+// any stage (see DEAD_REASONS) rather than being one more step in the chain.
+export const PIPELINE_STAGES = [
+  "New Lead",
+  "Contacted",
+  "Qualified",
+  "Offer Made",
+  "Negotiating",
+  "Under Contract",
+  "Disposition",
+  "Closed",
+  "Dead / Lost",
+] as const;
+export type PipelineStage = (typeof PIPELINE_STAGES)[number];
+export const DEAD_REASONS = [
+  "Price Too High",
+  "Seller Not Motivated",
+  "Seller Changed Mind",
+  "Bad Property",
+  "Numbers Don't Work",
+  "Could Not Reach Seller",
+  "Seller Chose Another Buyer",
+  "Property Sold",
+  "Duplicate Lead",
+  "Not Interested",
+  "Other",
+] as const;
+export type DeadReason = (typeof DEAD_REASONS)[number];
+export const MOTIVATION_LEVELS = ["Hot", "Warm", "Cold", "Unknown"] as const;
+export type MotivationLevel = (typeof MOTIVATION_LEVELS)[number];
 export type AddressConfidence = "high" | "medium" | "low" | "unresolved";
 
 // The standard repair checklist categories (plan section 34's condition
@@ -198,11 +264,31 @@ export const REPAIR_CATEGORIES = [
   "Foundation",
   "Plumbing",
   "Electrical",
+  "Interior Paint",
+  "Exterior Paint",
+  "Flooring",
   "Kitchen",
   "Bathrooms",
   "Windows",
-  "Siding/Exterior",
-  "Flooring",
+  "Doors",
+  "Siding",
+  "Exterior",
+  "Landscaping",
+  "Appliances",
+  "Water Damage",
+  "Mold",
+  "Structural",
+  "Garage",
+  "Attic",
+  "Insulation",
+  "Drywall",
+  "Ceiling",
+  "Basement/Crawlspace",
+  "Framing",
+  "Sewer",
+  "Drainage",
+  "Driveway",
+  "Fencing",
   "Other",
 ] as const;
 export type RepairCategory = (typeof REPAIR_CATEGORIES)[number];
@@ -212,7 +298,33 @@ export interface RepairItem {
   seller_submission_id: string;
   category: RepairCategory | string;
   cost: number;
+  // Custom categories typed in via "+ Add Repair Item" aren't in
+  // REPAIR_CATEGORIES — the DB column is free text, so any name is valid.
+  notes: string | null;
   source: "manual" | "ai";
+  updated_at: string;
+}
+
+// One row per comparable sale (never a JSON blob) — same pattern as
+// repair_items/buyer_zip_codes. `source` distinguishes a comp the admin
+// typed in by hand from one a future property-data API imports, so the
+// underwriting workspace can label each one honestly.
+export interface LeadComp {
+  id: string;
+  seller_submission_id: string;
+  address: string;
+  sale_price: number | null;
+  sale_date: string | null;
+  bedrooms: number | null;
+  bathrooms: number | null;
+  square_feet: number | null;
+  lot_size: string | null;
+  distance_miles: number | null;
+  condition: string | null;
+  comp_rating: "Strong" | "Fair" | "Weak" | null;
+  notes: string | null;
+  source: "manual" | "imported";
+  created_at: string;
   updated_at: string;
 }
 
