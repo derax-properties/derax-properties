@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import type { LeadStatus, SellerSubmission, Deal, DealStage } from "@/lib/types";
+import type { LeadStatus, SellerSubmission, Deal, DealStage, PipelineStage } from "@/lib/types";
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatDate, formatDateOnly } from "@/lib/utils";
 import { getFollowUpStatus } from "@/lib/followUp";
-import { GroupIcon, FlameIcon, CalendarIcon, AlertClockIcon, DocumentIcon } from "@/components/admin/icons";
+import { advanceLeadStage } from "./leads/actions";
+import { GroupIcon, FlameIcon, CalendarIcon, AlertClockIcon, DocumentIcon, PersonIcon } from "@/components/admin/icons";
 
 const DEAL_STAGES: DealStage[] = [
   "Contract Sent",
@@ -75,6 +76,48 @@ export default async function AdminDashboardPage() {
   const overdueLeads = (allLeads ?? []).filter(
     (l) => (l.status === "New" || l.status === "Contacted") && new Date(l.created_at) < threeDaysAgo
   ).length;
+
+  // Lead Intake Queue: every lead still short of Qualified (New Lead or
+  // Contacted — including one with no pipeline_stage set yet, which the
+  // rest of the CRM treats as "New Lead"), reviewed and sorted
+  // automatically so nothing silently sits untouched before it's worth
+  // qualifying. "Automated" here means two things, both derived rather
+  // than stored so they can never drift out of sync: a lead is flagged
+  // stale once it's sat 3+ days without moving (the same threshold the
+  // "Overdue" stat tile above already uses), and the list is pre-sorted by
+  // urgency (Hot motivation first, then Overdue/Due Today follow-ups, then
+  // longest-waiting) instead of just newest-first.
+  const PRE_QUALIFIED_STAGES = new Set(["New Lead", "Contacted"]);
+  const MOTIVATION_WEIGHT: Record<string, number> = { Hot: 3, Warm: 2, Cold: 1 };
+  const FOLLOWUP_WEIGHT: Record<string, number> = { Overdue: 3, "Due Today": 2, Upcoming: 1 };
+
+  const { data: intakeLeadsRaw } = await supabase
+    .from("seller_submissions")
+    .select(
+      "id, reference_number, first_name, last_name, city, state, pipeline_stage, motivation_level, created_at, next_follow_up_date, follow_up_completed_at"
+    )
+    .order("created_at", { ascending: true });
+
+  const intakeLeads = (intakeLeadsRaw ?? [])
+    .filter((l) => PRE_QUALIFIED_STAGES.has(l.pipeline_stage ?? "New Lead"))
+    .map((l) => {
+      const daysWaiting = Math.max(0, Math.floor((Date.now() - new Date(l.created_at).getTime()) / (1000 * 60 * 60 * 24)));
+      return {
+        ...l,
+        daysWaiting,
+        stale: daysWaiting >= 3,
+        followUp: getFollowUpStatus(l as unknown as SellerSubmission),
+      };
+    })
+    .sort((a, b) => {
+      const motivationDiff = (MOTIVATION_WEIGHT[b.motivation_level ?? ""] ?? 0) - (MOTIVATION_WEIGHT[a.motivation_level ?? ""] ?? 0);
+      if (motivationDiff !== 0) return motivationDiff;
+      const followUpDiff = (FOLLOWUP_WEIGHT[b.followUp] ?? 0) - (FOLLOWUP_WEIGHT[a.followUp] ?? 0);
+      if (followUpDiff !== 0) return followUpDiff;
+      return b.daysWaiting - a.daysWaiting;
+    });
+
+  const staleIntakeCount = intakeLeads.filter((l) => l.stale).length;
 
   const { data: activeDeals } = await supabase
     .from("deals")
@@ -147,6 +190,128 @@ export default async function AdminDashboardPage() {
           </ul>
         )}
         {upcomingFollowUps.length === 0 && <p className="mt-4 text-sm text-ink/40">Nothing overdue or due soon.</p>}
+      </div>
+
+      <div className="mt-8 rounded-xl bg-white p-5 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2.5">
+            <span className="crm-accent-soft-bg flex h-8 w-8 items-center justify-center rounded-lg">
+              <PersonIcon className="h-4 w-4" />
+            </span>
+            <div>
+              <h2 className="font-display text-lg font-semibold text-ink">Lead Intake Queue</h2>
+              <p className="text-xs text-ink/40">
+                Every lead still short of Qualified — sorted by urgency (Hot first, then overdue follow-ups, then longest-waiting) so nothing sits untouched.
+              </p>
+            </div>
+          </div>
+          <div className="flex shrink-0 items-center gap-3">
+            {staleIntakeCount > 0 && (
+              <span className="rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-600">
+                {staleIntakeCount} stale (3+ days)
+              </span>
+            )}
+            <Link href="/admin/leads" className="focus-gold text-sm font-semibold text-gold-dark hover:underline">
+              View board →
+            </Link>
+          </div>
+        </div>
+
+        <div className="mt-4 overflow-x-auto">
+          <table className="w-full min-w-[720px] text-left text-sm">
+            <thead>
+              <tr className="border-b border-ink/10 text-xs uppercase tracking-wide text-ink/40">
+                <th className="pb-2">Lead</th>
+                <th className="pb-2">Stage</th>
+                <th className="pb-2">Motivation</th>
+                <th className="pb-2">Waiting</th>
+                <th className="pb-2">Follow-Up</th>
+                <th className="pb-2"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {intakeLeads.slice(0, 10).map((lead) => {
+                const nextStage: PipelineStage = lead.pipeline_stage === "Contacted" ? "Qualified" : "Contacted";
+                return (
+                  <tr key={lead.id} className="border-b border-ink/5 last:border-0 hover:bg-cream/40">
+                    <td className="py-2.5">
+                      <Link href={`/admin/leads/${lead.id}`} className="focus-gold font-medium text-gold-dark hover:underline">
+                        {lead.first_name} {lead.last_name}
+                      </Link>
+                      <span className="block text-xs text-ink/40">
+                        {lead.city}, {lead.state}
+                      </span>
+                    </td>
+                    <td className="py-2.5">
+                      <span className="rounded-full bg-ink/5 px-2 py-0.5 text-xs font-semibold text-ink/60">
+                        {lead.pipeline_stage ?? "New Lead"}
+                      </span>
+                    </td>
+                    <td className="py-2.5">
+                      {lead.motivation_level && lead.motivation_level !== "Unknown" ? (
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                            lead.motivation_level === "Hot"
+                              ? "bg-red-100 text-red-700"
+                              : lead.motivation_level === "Warm"
+                              ? "bg-amber-100 text-amber-700"
+                              : "bg-sky-100 text-sky-700"
+                          }`}
+                        >
+                          {lead.motivation_level}
+                        </span>
+                      ) : (
+                        <span className="text-ink/30">—</span>
+                      )}
+                    </td>
+                    <td className={`py-2.5 font-semibold ${lead.stale ? "text-red-600" : "text-ink/50"}`}>
+                      {lead.daysWaiting}d{lead.stale ? " ⚠" : ""}
+                    </td>
+                    <td className="py-2.5 text-xs">
+                      {lead.followUp === "No Follow-Up" || lead.followUp === "Completed" ? (
+                        <span className="text-ink/30">—</span>
+                      ) : (
+                        <span
+                          className={
+                            lead.followUp === "Overdue"
+                              ? "font-semibold text-red-500"
+                              : lead.followUp === "Due Today"
+                              ? "font-semibold text-amber-600"
+                              : "text-ink/50"
+                          }
+                        >
+                          {lead.followUp}
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-2.5 text-right">
+                      <form action={advanceLeadStage.bind(null, lead.id, nextStage)}>
+                        <button
+                          type="submit"
+                          className="focus-gold rounded-full border border-forest px-3 py-1 text-xs font-semibold text-forest hover:bg-forest hover:text-white"
+                        >
+                          Mark {nextStage} →
+                        </button>
+                      </form>
+                    </td>
+                  </tr>
+                );
+              })}
+              {intakeLeads.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="py-8 text-center text-ink/40">
+                    No leads waiting — everything&apos;s been reviewed.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+        {intakeLeads.length > 10 && (
+          <p className="mt-2 text-xs text-ink/40">
+            Showing 10 oldest/most urgent of {intakeLeads.length} — view the full board for the rest.
+          </p>
+        )}
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
