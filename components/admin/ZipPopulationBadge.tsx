@@ -30,6 +30,13 @@ export function ZipPopulationBadge({ zip }: { zip: string }) {
   return (
     <span
       className="relative inline-block"
+      onClick={(e) => {
+        // This badge is used inline inside card/row links elsewhere in the
+        // CRM (the Kanban board in particular) — stop the click here so
+        // tapping ⓘ never also triggers the surrounding link's navigation.
+        e.preventDefault();
+        e.stopPropagation();
+      }}
       onMouseEnter={() => {
         setOpen(true);
         load();
@@ -48,7 +55,10 @@ export function ZipPopulationBadge({ zip }: { zip: string }) {
         ⓘ
       </button>
       {open && (
-        <span className="absolute left-0 top-full z-20 mt-1 w-56 rounded-lg border border-ink/10 bg-white p-3 text-xs shadow-card">
+        <span
+          onClick={(e) => e.stopPropagation()}
+          className="absolute left-0 top-full z-20 mt-1 w-56 rounded-lg border border-ink/10 bg-white p-3 text-xs shadow-card"
+        >
           {loading && <span className="text-ink/40">Loading…</span>}
           {!loading && data && data.lookup_failed && (
             <span className="text-ink/40">Population data unavailable.</span>

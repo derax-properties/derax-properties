@@ -5,7 +5,6 @@ import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getCurrentAdminProfile } from "@/lib/supabase/profile";
 import { getPopulationForZip } from "@/lib/population";
-import { REPAIR_CATEGORIES } from "@/lib/types";
 import { estimateRepairsWithAI } from "@/lib/aiRepairEstimate";
 
 export async function updateLead(id: string, formData: FormData) {
@@ -193,7 +192,24 @@ export async function updateRepairItems(id: string, formData: FormData) {
  * any field and re-save (which switches it back to source='manual') before
  * using it for an offer — this is a starting point, never a final number.
  */
-export async function estimateRepairsWithAIAction(id: string) {
+export async function estimateRepairsWithAIAction(id: string, formData: FormData) {
+  // The admin checks a box per category that actually applies before
+  // asking for an estimate — only those get sent to the AI and only those
+  // rows get upserted, so a category the admin didn't select (including
+  // one they already priced manually) is never touched or zeroed out.
+  const selectedCategories = formData
+    .getAll("ai_categories")
+    .map((v) => String(v))
+    .filter(Boolean);
+
+  if (selectedCategories.length === 0) {
+    redirect(
+      `/admin/leads/${id}?error=${encodeURIComponent(
+        "Select at least one repair category to estimate with AI."
+      )}#underwriting`
+    );
+  }
+
   const supabase = createServerSupabaseClient();
   const { data: lead } = await supabase.from("seller_submissions").select("*").eq("id", id).single();
 
@@ -219,6 +235,7 @@ export async function estimateRepairsWithAIAction(id: string) {
     yearBuilt: lead.year_built ?? null,
     issues,
     additionalDetails: lead.additional_details ?? lead.notes ?? null,
+    categories: selectedCategories,
   });
 
   if (!result) {
@@ -229,7 +246,7 @@ export async function estimateRepairsWithAIAction(id: string) {
     );
   }
 
-  const rows = REPAIR_CATEGORIES.map((category) => ({
+  const rows = selectedCategories.map((category) => ({
     seller_submission_id: id,
     category,
     cost: result.costs[category] ?? 0,
@@ -239,7 +256,11 @@ export async function estimateRepairsWithAIAction(id: string) {
 
   await supabase.from("repair_items").upsert(rows, { onConflict: "seller_submission_id,category" });
 
-  const total = rows.reduce((sum, r) => sum + r.cost, 0);
+  // Re-total from every stored repair_items row, not just the ones just
+  // estimated — categories the admin didn't check keep whatever value
+  // (manual or a prior AI estimate) they already had.
+  const { data: allItems } = await supabase.from("repair_items").select("cost").eq("seller_submission_id", id);
+  const total = (allItems ?? []).reduce((sum, r) => sum + (r.cost ?? 0), 0);
   await supabase
     .from("seller_submissions")
     .update({ repair_estimate: total, underwriting_updated_at: new Date().toISOString() })
@@ -249,7 +270,9 @@ export async function estimateRepairsWithAIAction(id: string) {
     seller_submission_id: id,
     actor_id: null,
     actor_type: "ai",
-    action: `AI repair estimate generated: $${total.toLocaleString()} total. ${result.summary}`,
+    action: `AI repair estimate generated for ${selectedCategories.join(", ")}: $${rows
+      .reduce((sum, r) => sum + r.cost, 0)
+      .toLocaleString()} · new total $${total.toLocaleString()}. ${result.summary}`,
   });
 
   revalidatePath(`/admin/leads/${id}`);

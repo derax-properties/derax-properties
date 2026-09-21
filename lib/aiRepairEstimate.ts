@@ -1,5 +1,3 @@
-import { REPAIR_CATEGORIES, type RepairCategory } from "./types";
-
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 // "-latest" aliases track the current recommended model for that family, so
 // this stays valid as Anthropic ships newer models without a code change.
@@ -7,7 +5,7 @@ const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 const MODEL = process.env.ANTHROPIC_MODEL || "claude-3-5-haiku-latest";
 
 export interface AiRepairEstimateResult {
-  costs: Record<RepairCategory, number>;
+  costs: Record<string, number>;
   summary: string;
 }
 
@@ -18,6 +16,10 @@ export interface AiRepairEstimateInput {
   yearBuilt: number | null;
   issues: string[];
   additionalDetails: string | null;
+  // The admin explicitly checks which repair categories apply before
+  // asking for an estimate — the AI only prices these, so a category the
+  // admin didn't select (or already priced manually) is never touched.
+  categories: string[];
 }
 
 /**
@@ -37,6 +39,11 @@ export async function estimateRepairsWithAI(input: AiRepairEstimateInput): Promi
     return null;
   }
 
+  if (input.categories.length === 0) {
+    console.warn("[aiRepairEstimate] No categories selected — skipping AI estimate.");
+    return null;
+  }
+
   const prompt = `You are helping a real estate wholesaler in the Atlanta, GA market rough-estimate repair costs for a distressed property, based only on the information given below. Never invent details that aren't provided.
 
 Property type: ${input.propertyType}
@@ -46,8 +53,10 @@ Year built: ${input.yearBuilt ?? "Not specified"}
 Reported issues: ${input.issues.length ? input.issues.join(", ") : "None reported"}
 Additional notes: ${input.additionalDetails ?? "None"}
 
-Estimate a rough repair cost in USD for each category below, reflecting typical Atlanta-area investor-grade (not retail) repair costs for a property in this condition. If a category shows no sign of needing work, give it a low or zero estimate rather than skipping it. Respond with ONLY a JSON object, no other text, in exactly this shape:
-{"costs": {${REPAIR_CATEGORIES.map((c) => `"${c}": number`).join(", ")}}, "summary": "one sentence explaining the condition-driven reasoning"}`;
+The admin has specifically flagged these repair categories as applicable to this property — estimate a rough repair cost in USD for ONLY these categories, reflecting typical Atlanta-area investor-grade (not retail) repair costs for a property in this condition: ${input.categories.join(", ")}.
+
+Respond with ONLY a JSON object, no other text, in exactly this shape:
+{"costs": {${input.categories.map((c) => `"${c}": number`).join(", ")}}, "summary": "one sentence explaining the condition-driven reasoning"}`;
 
   try {
     const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -81,8 +90,8 @@ Estimate a rough repair cost in USD for each category below, reflecting typical 
 
     if (!parsed || typeof parsed !== "object" || !parsed.costs) return null;
 
-    const costs = {} as Record<RepairCategory, number>;
-    for (const category of REPAIR_CATEGORIES) {
+    const costs: Record<string, number> = {};
+    for (const category of input.categories) {
       const v = parsed.costs[category];
       costs[category] = typeof v === "number" && Number.isFinite(v) && v >= 0 ? v : 0;
     }

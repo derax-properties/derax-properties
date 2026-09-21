@@ -7,6 +7,7 @@ import type { SellerSubmission, PipelineStage, DeadReason } from "@/lib/types";
 import { DEAD_REASONS } from "@/lib/types";
 import { getFollowUpStatus, daysOverdue } from "@/lib/followUp";
 import { formatDateOnly } from "@/lib/utils";
+import { ZipPopulationBadge } from "./ZipPopulationBadge";
 import { PersonIcon, PinIcon, PhoneIcon, DotsIcon } from "./icons";
 
 function FollowUpBadge({ lead }: { lead: SellerSubmission }) {
@@ -108,6 +109,15 @@ function TypePill({ type }: { type: SellerSubmission["lead_type"] }) {
  * can die from any stage, so it gets its own "Mark Dead / Lost" action that
  * requires picking a reason first (never a bare stage change), and a
  * Dead / Lost card gets a "Reopen" button instead of an Advance button.
+ *
+ * Cards are also draggable between columns (native HTML5 drag-and-drop) as
+ * a faster alternative to the Advance/Reopen/Mark Dead buttons — those
+ * buttons stay exactly as they were so nothing already working is removed,
+ * and dragging routes through the same server actions and the same
+ * Dead/Lost-requires-a-reason rule: dropping a card on the Dead / Lost
+ * column opens the reason prompt instead of moving it immediately, and
+ * dragging a Dead / Lost card back out clears its dead reason via
+ * onReopen instead of a bare stage change.
  */
 export function LeadsKanban({
   leads,
@@ -127,6 +137,8 @@ export function LeadsKanban({
   const [deadPromptId, setDeadPromptId] = useState<string | null>(null);
   const [deadReason, setDeadReason] = useState<string>(DEAD_REASONS[0]);
   const [deadNote, setDeadNote] = useState("");
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragOverStage, setDragOverStage] = useState<PipelineStage | null>(null);
 
   // Keep local state in sync whenever the server sends fresh data (e.g.
   // after router.refresh(), or a plain page reload) — otherwise this
@@ -164,11 +176,35 @@ export function LeadsKanban({
     setDeadNote("");
   }
 
-  function handleReopen(lead: SellerSubmission) {
-    const rollback = moveOptimistically(lead.id, "Contacted", lead.pipeline_stage);
-    onReopen(lead.id, "Contacted")
+  function handleReopen(lead: SellerSubmission, toStage: PipelineStage = "Contacted") {
+    const rollback = moveOptimistically(lead.id, toStage, lead.pipeline_stage);
+    onReopen(lead.id, toStage)
       .then(() => router.refresh())
       .catch(rollback);
+  }
+
+  // The single entry point for a card being dropped on a column. Routes to
+  // whichever server action actually applies rather than always calling
+  // advanceLeadStage, so a drag can never silently skip the Dead/Lost
+  // reason requirement or leave a stale dead_reason behind on reopen.
+  function handleDrop(leadId: string, toStage: PipelineStage) {
+    const lead = localLeads.find((l) => l.id === leadId);
+    if (!lead) return;
+    const fromStage = lead.pipeline_stage ?? "New Lead";
+    if (toStage === fromStage) return;
+
+    if (toStage === "Dead / Lost") {
+      setDeadReason(DEAD_REASONS[0]);
+      setDeadNote("");
+      setDeadPromptId(lead.id);
+      return;
+    }
+
+    if (fromStage === "Dead / Lost") {
+      handleReopen(lead, toStage);
+    } else {
+      handleAdvance(lead, toStage);
+    }
   }
 
   const columns = STAGES.map((stage) => ({
@@ -177,9 +213,29 @@ export function LeadsKanban({
   }));
 
   return (
-    <div className="grid grid-cols-1 gap-3 overflow-x-auto pb-2 sm:grid-cols-2 lg:grid-flow-col lg:auto-cols-[260px]">
+    <div>
+      <p className="mb-2 px-1 text-[11px] text-ink/35">
+        Drag a card to any column to move it, or use the buttons on the card.
+      </p>
+      <div className="grid grid-cols-1 gap-3 overflow-x-auto pb-2 sm:grid-cols-2 lg:grid-flow-col lg:auto-cols-[260px]">
       {columns.map((col) => (
-        <div key={col.stage} className="rounded-xl bg-white p-3 shadow-sm">
+        <div
+          key={col.stage}
+          onDragOver={(e) => {
+            e.preventDefault();
+            if (dragOverStage !== col.stage) setDragOverStage(col.stage);
+          }}
+          onDragLeave={() => setDragOverStage((s) => (s === col.stage ? null : s))}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDragOverStage(null);
+            if (draggingId) handleDrop(draggingId, col.stage);
+            setDraggingId(null);
+          }}
+          className={`rounded-xl bg-white p-3 shadow-sm transition ${
+            dragOverStage === col.stage ? "ring-2 ring-gold ring-offset-2" : ""
+          }`}
+        >
           <div className="mb-2 flex items-center gap-2 px-1">
             <span className={`h-2 w-2 rounded-full ${STAGE_ACCENT[col.stage]}`} />
             <span className="text-xs font-bold uppercase tracking-wide text-ink/60">{col.stage}</span>
@@ -194,9 +250,20 @@ export function LeadsKanban({
               return (
                 <div
                   key={lead.id}
-                  className={`relative rounded-lg border border-ink/10 p-3 text-sm shadow-sm ${
+                  draggable
+                  onDragStart={(e) => {
+                    setDraggingId(lead.id);
+                    e.dataTransfer.effectAllowed = "move";
+                  }}
+                  onDragEnd={() => {
+                    setDraggingId(null);
+                    setDragOverStage(null);
+                  }}
+                  className={`relative cursor-grab rounded-lg border border-ink/10 p-3 text-sm shadow-sm active:cursor-grabbing ${
                     movingOutId === lead.id ? "crm-kanban-card-out" : ""
-                  } ${justMovedId === lead.id ? "crm-kanban-card-in" : ""}`}
+                  } ${justMovedId === lead.id ? "crm-kanban-card-in" : ""} ${
+                    draggingId === lead.id ? "opacity-40" : ""
+                  }`}
                 >
                   <Link
                     href={`/admin/leads/${lead.id}`}
@@ -217,6 +284,7 @@ export function LeadsKanban({
                       <span className="truncate">
                         {lead.property_address}, {lead.city}, {lead.state}
                       </span>
+                      {lead.zip && <ZipPopulationBadge zip={lead.zip} />}
                     </div>
                     {lead.asking_price && (
                       <div className="mt-1 flex items-center gap-1.5 text-xs font-semibold text-ink">
@@ -317,6 +385,7 @@ export function LeadsKanban({
           </div>
         </div>
       ))}
+      </div>
     </div>
   );
 }
