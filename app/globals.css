@@ -557,6 +557,50 @@ a.crm-brand-chip:hover {
 }
 
 /*
+ * Form fields (input/textarea/select) keep a plain, light background in
+ * dark mode and get their own pinned-dark text color, instead of following
+ * the rest of the page's near-white text. Most of these fields never had a
+ * bg-white class to begin with (they're plain unstyled <input>s that just
+ * render with the browser's own default white background), so nothing
+ * above recolors that background for dark mode — but the near-white text
+ * color set for everything else on the page (.text-ink and friends) still
+ * gets inherited into them. Pale text on a plain white input box is nearly
+ * invisible, which is exactly the "I can't see what I'm typing" report.
+ * A few fields (built from components/FormInput.tsx) DO carry an explicit
+ * bg-white/text-ink pair, which the rules above already recolor to a dark
+ * card + pale text — readable there, but inconsistent with every other
+ * field, and worth keeping visually consistent, so those are normalized
+ * back to the same light-box/dark-text look here too. The .bg-white /
+ * .text-ink combinator selectors exist only to out-specificity those two
+ * existing dark-mode rules for the fields that happen to carry those
+ * classes; the plain tag selectors above them handle every other field.
+ * Light mode never sees any of this — it's all scoped under
+ * .crm-shell[data-crm-mode="dark"].
+ */
+.crm-shell[data-crm-mode="dark"] input,
+.crm-shell[data-crm-mode="dark"] textarea,
+.crm-shell[data-crm-mode="dark"] select {
+  background-color: #ffffff;
+  color: #16231e;
+}
+.crm-shell[data-crm-mode="dark"] input.bg-white,
+.crm-shell[data-crm-mode="dark"] textarea.bg-white,
+.crm-shell[data-crm-mode="dark"] select.bg-white {
+  background: #ffffff;
+}
+.crm-shell[data-crm-mode="dark"] input.text-ink,
+.crm-shell[data-crm-mode="dark"] textarea.text-ink,
+.crm-shell[data-crm-mode="dark"] select.text-ink {
+  color: #16231e;
+}
+.crm-shell[data-crm-mode="dark"] input:disabled,
+.crm-shell[data-crm-mode="dark"] textarea:disabled,
+.crm-shell[data-crm-mode="dark"] select:disabled {
+  background-color: rgba(255, 255, 255, 0.65);
+  color: rgba(22, 35, 30, 0.55);
+}
+
+/*
  * "Floating on water" — the CRM-wide interaction language the owner asked
  * for: things should feel like they're resting on water, not sitting flat
  * on a page. Two pieces:
