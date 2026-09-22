@@ -983,42 +983,68 @@ export default async function LeadDetailPage({
             </form>
           </Panel>
 
-          <Panel title="Activity">
-            <form
-              action={async (formData: FormData) => {
-                "use server";
-                const note = String(formData.get("note") ?? "").trim();
-                if (note) await logActivity(params.id, null, note);
-              }}
-              className="flex flex-col gap-2"
+          {/* No crm-water-hover here either, same reasoning as the Underwriting card above. */}
+          <div id="activity" className="scroll-mt-24 rounded-xl bg-white p-5 shadow-sm">
+            <CollapsiblePanel
+              title="Activity"
+              subtitle="Calls, texts, notes, and system history for this lead."
+              anchorId="activity"
+              summary={
+                <div className="flex flex-col gap-2 text-sm">
+                  {activity && activity.length > 0 ? (
+                    <>
+                      <p className="text-ink">{activity[0].action}</p>
+                      <p className="text-xs text-ink/40">
+                        {activity[0].actor_type === "ai" ? "AI" : "Team"} · {formatDate(activity[0].created_at)}
+                      </p>
+                      {activity.length > 1 && (
+                        <p className="mt-1 text-[11px] text-ink/35">
+                          +{activity.length - 1} more entr{activity.length - 1 === 1 ? "y" : "ies"} — click to see full history and add a note.
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <p className="text-sm text-ink/40">No activity logged yet — click to add one.</p>
+                  )}
+                </div>
+              }
             >
-              <input
-                name="note"
-                type="text"
-                placeholder="Log a call, text, or note…"
-                className="focus-gold w-full rounded-lg border border-ink/15 px-3 py-2 text-sm"
-              />
-              <button
-                type="submit"
-                className="focus-gold self-start rounded-full border border-gold px-4 py-1.5 text-xs font-semibold text-gold-dark hover:bg-gold hover:text-ink"
+              <form
+                action={async (formData: FormData) => {
+                  "use server";
+                  const note = String(formData.get("note") ?? "").trim();
+                  if (note) await logActivity(params.id, null, note);
+                }}
+                className="mt-3 flex flex-col gap-2"
               >
-                Add to Activity Log
-              </button>
-            </form>
-            <ul className="mt-3 flex flex-col gap-3">
-              {(activity ?? []).map((entry) => (
-                <li key={entry.id} className="border-b border-ink/5 pb-2 text-sm last:border-0">
-                  <p className="text-ink">{entry.action}</p>
-                  <p className="text-xs text-ink/40">
-                    {entry.actor_type === "ai" ? "AI" : "Team"} · {formatDate(entry.created_at)}
-                  </p>
-                </li>
-              ))}
-              {(!activity || activity.length === 0) && (
-                <li className="text-sm text-ink/40">No activity logged yet.</li>
-              )}
-            </ul>
-          </Panel>
+                <input
+                  name="note"
+                  type="text"
+                  placeholder="Log a call, text, or note…"
+                  className="focus-gold w-full rounded-lg border border-ink/15 px-3 py-2 text-sm"
+                />
+                <button
+                  type="submit"
+                  className="focus-gold self-start rounded-full border border-gold px-4 py-1.5 text-xs font-semibold text-gold-dark hover:bg-gold hover:text-ink"
+                >
+                  Add to Activity Log
+                </button>
+              </form>
+              <ul className="mt-3 flex flex-col gap-3">
+                {(activity ?? []).map((entry) => (
+                  <li key={entry.id} className="border-b border-ink/5 pb-2 text-sm last:border-0">
+                    <p className="text-ink">{entry.action}</p>
+                    <p className="text-xs text-ink/40">
+                      {entry.actor_type === "ai" ? "AI" : "Team"} · {formatDate(entry.created_at)}
+                    </p>
+                  </li>
+                ))}
+                {(!activity || activity.length === 0) && (
+                  <li className="text-sm text-ink/40">No activity logged yet.</li>
+                )}
+              </ul>
+            </CollapsiblePanel>
+          </div>
         </div>
       </div>
     </div>
@@ -1047,8 +1073,28 @@ function FollowUpPanel({ lead }: { lead: SellerSubmission }) {
   const setFollowUpFromFormWithId = setFollowUpFromForm.bind(null, lead.id);
   const completeFollowUpWithId = completeFollowUp.bind(null, lead.id);
 
+  // Which quick-pick button (if any) is actually in effect right now, so
+  // that button — and only that one — gets a filled/highlighted look
+  // instead of every button always looking the same regardless of what's
+  // selected. Derived straight from the lead's own stored fields (never a
+  // separate "which one is checked" flag), so it can't drift out of sync:
+  // clicking a different one changes next_follow_up_date/completed_at,
+  // which is what this reads, so the highlight always moves to match.
+  const isCompleted = status === "Completed";
+  const isNoFollowUp = !isCompleted && !lead.next_follow_up_date;
+  const activeQuickPickDate = isCompleted || isNoFollowUp ? null : lead.next_follow_up_date;
+
+  const quickPickClass = (active: boolean) =>
+    active
+      ? "focus-gold rounded-full border border-gold-dark bg-gold px-3 py-1.5 text-xs font-bold text-ink disabled:opacity-70"
+      : "focus-gold rounded-full border border-ink/15 px-3 py-1.5 text-xs font-semibold text-ink/70 hover:bg-ink/5 disabled:opacity-70";
+
   return (
-    <div className="crm-water-hover rounded-xl bg-white p-5 shadow-sm">
+    // No crm-water-hover here — this card is mostly clickable quick-pick
+    // buttons, and that hover-lift/rotate/scale animation was exactly what
+    // made a nearby "Hide details" button unreliable to click on desktop
+    // (see the Underwriting card above); the same risk applies here.
+    <div className="rounded-xl bg-white p-5 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="font-display text-lg font-semibold text-ink">Follow-Up</h2>
         <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide ${FOLLOW_UP_STATUS_TINT[status]}`}>
@@ -1070,22 +1116,31 @@ function FollowUpPanel({ lead }: { lead: SellerSubmission }) {
 
       <div className="mt-3 flex flex-wrap gap-1.5">
         <form action={setFollowUpWithId.bind(null, dateOffset(0), lead.follow_up_type, lead.follow_up_notes)}>
-          <button type="submit" className="focus-gold rounded-full border border-ink/15 px-3 py-1.5 text-xs font-semibold text-ink/70 hover:bg-ink/5">Today</button>
+          <SubmitButton pendingLabel="Today…" className={quickPickClass(activeQuickPickDate === dateOffset(0))}>Today</SubmitButton>
         </form>
         <form action={setFollowUpWithId.bind(null, dateOffset(1), lead.follow_up_type, lead.follow_up_notes)}>
-          <button type="submit" className="focus-gold rounded-full border border-ink/15 px-3 py-1.5 text-xs font-semibold text-ink/70 hover:bg-ink/5">Tomorrow</button>
+          <SubmitButton pendingLabel="Tomorrow…" className={quickPickClass(activeQuickPickDate === dateOffset(1))}>Tomorrow</SubmitButton>
         </form>
         <form action={setFollowUpWithId.bind(null, dateOffset(3), lead.follow_up_type, lead.follow_up_notes)}>
-          <button type="submit" className="focus-gold rounded-full border border-ink/15 px-3 py-1.5 text-xs font-semibold text-ink/70 hover:bg-ink/5">3 Days</button>
+          <SubmitButton pendingLabel="3 Days…" className={quickPickClass(activeQuickPickDate === dateOffset(3))}>3 Days</SubmitButton>
         </form>
         <form action={setFollowUpWithId.bind(null, dateOffset(7), lead.follow_up_type, lead.follow_up_notes)}>
-          <button type="submit" className="focus-gold rounded-full border border-ink/15 px-3 py-1.5 text-xs font-semibold text-ink/70 hover:bg-ink/5">7 Days</button>
+          <SubmitButton pendingLabel="7 Days…" className={quickPickClass(activeQuickPickDate === dateOffset(7))}>7 Days</SubmitButton>
         </form>
         <form action={completeFollowUpWithId}>
-          <button type="submit" className="focus-gold rounded-full bg-forest px-3 py-1.5 text-xs font-bold text-white hover:bg-forest/90">✓ Complete</button>
+          <SubmitButton
+            pendingLabel="…"
+            className={
+              isCompleted
+                ? "focus-gold rounded-full bg-forest px-3 py-1.5 text-xs font-bold text-white disabled:opacity-70"
+                : "focus-gold rounded-full border border-forest/30 px-3 py-1.5 text-xs font-bold text-forest hover:bg-forest/10 disabled:opacity-70"
+            }
+          >
+            ✓ Complete
+          </SubmitButton>
         </form>
         <form action={setFollowUpWithId.bind(null, null, null, null)}>
-          <button type="submit" className="focus-gold rounded-full border border-ink/15 px-3 py-1.5 text-xs font-semibold text-ink/40 hover:bg-ink/5">No Follow-Up</button>
+          <SubmitButton pendingLabel="…" className={quickPickClass(isNoFollowUp)}>No Follow-Up</SubmitButton>
         </form>
       </div>
 
