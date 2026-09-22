@@ -115,3 +115,13 @@ export const ALLOWED_DOCUMENT_TYPES = [
 ];
 export const MAX_FILE_SIZE_BYTES = 15 * 1024 * 1024; // 15MB per file
 export const MAX_FILES_PER_SUBMISSION = 12;
+
+// Video support for the lead detail page's media uploader. Videos are
+// routed through direct-to-storage signed uploads (see
+// app/admin/(dashboard)/leads/[id]/mediaActions.ts) rather than through a
+// server action's request body — Vercel serverless functions cap request
+// bodies well under what even a short phone video weighs, so a normal
+// multipart POST would fail for any real video file.
+export const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/quicktime", "video/webm", "video/x-m4v"];
+export const MAX_VIDEO_SIZE_BYTES = 200 * 1024 * 1024; // 200MB per video
+export const MAX_MEDIA_FILES_PER_UPLOAD = 10;

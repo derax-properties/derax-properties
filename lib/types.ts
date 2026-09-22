@@ -147,6 +147,18 @@ export interface PropertyPhoto {
   sort_order: number;
 }
 
+// A lead's uploaded videos — same one-row-per-file pattern as
+// seller_property_photos, kept as its own table (rather than folded into
+// seller_documents) since videos display and play differently than a PDF
+// or photo. Uploaded via direct-to-storage signed URLs, not through a
+// server action body (see leads/[id]/mediaActions.ts).
+export interface SellerVideo {
+  id: string;
+  submission_id: string;
+  storage_path: string;
+  created_at: string;
+}
+
 export interface InvestorInquiry {
   id: string;
   created_at: string;

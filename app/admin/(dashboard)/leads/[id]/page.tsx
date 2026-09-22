@@ -26,6 +26,7 @@ import { REPAIR_CATEGORIES, PIPELINE_STAGES, MOTIVATION_LEVELS, LEAD_SOURCES, LE
 import { createDeal } from "../../deals/actions";
 import { calculateMAO } from "@/lib/profitAnalysis";
 import { calculateEquityPercent, calculateEquityDollars } from "@/lib/equity";
+import { LeadMediaUploader } from "@/components/admin/LeadMediaUploader";
 import { formatDateOnly, formatRelativeTime } from "@/lib/utils";
 
 export const metadata = { title: "Lead Detail", robots: { index: false, follow: false } };
@@ -71,6 +72,10 @@ export default async function LeadDetailPage({
 
   const { data: photoRows } = await supabase
     .from("seller_property_photos")
+    .select("*")
+    .eq("submission_id", params.id);
+  const { data: videoRows } = await supabase
+    .from("seller_property_videos")
     .select("*")
     .eq("submission_id", params.id);
   const { data: docRows } = await supabase
@@ -157,10 +162,14 @@ export default async function LeadDetailPage({
   }
 
   const photoBucket = process.env.SUPABASE_SELLER_PHOTOS_BUCKET || "seller-photos";
+  const videoBucket = process.env.SUPABASE_SELLER_VIDEOS_BUCKET || "seller-videos";
   const docBucket = process.env.SUPABASE_SELLER_DOCS_BUCKET || "seller-documents";
 
   const photos = await Promise.all(
     (photoRows ?? []).map(async (p) => ({ ...p, url: await getSignedUrl(photoBucket, p.storage_path) }))
+  );
+  const videos = await Promise.all(
+    (videoRows ?? []).map(async (v) => ({ ...v, url: await getSignedUrl(videoBucket, v.storage_path) }))
   );
   const documents = await Promise.all(
     (docRows ?? []).map(async (d) => ({ ...d, url: await getSignedUrl(docBucket, d.storage_path) }))
@@ -726,8 +735,8 @@ export default async function LeadDetailPage({
             </ul>
           </Panel>
 
-          {photos.length > 0 && (
-            <Panel title="Photos">
+          <Panel title="Photos & Videos">
+            {photos.length > 0 && (
               <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
                 {photos.map((p) =>
                   p.url ? (
@@ -738,8 +747,25 @@ export default async function LeadDetailPage({
                   ) : null
                 )}
               </div>
-            </Panel>
-          )}
+            )}
+            {videos.length > 0 && (
+              <div className={`grid grid-cols-2 gap-2 sm:grid-cols-3 ${photos.length > 0 ? "mt-3" : ""}`}>
+                {videos.map((v) =>
+                  v.url ? (
+                    <video key={v.id} src={v.url} controls className="aspect-video w-full rounded-lg bg-ink/5 object-cover" />
+                  ) : (
+                    <div key={v.id} className="flex aspect-video items-center justify-center rounded-lg bg-ink/5 text-xs text-ink/40">
+                      Link expired
+                    </div>
+                  )
+                )}
+              </div>
+            )}
+            {photos.length === 0 && videos.length === 0 && (
+              <p className="text-sm text-ink/40">No photos or videos yet — add some below.</p>
+            )}
+            <LeadMediaUploader leadId={params.id} />
+          </Panel>
 
           {documents.length > 0 && (
             <Panel title="Documents">
