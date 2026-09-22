@@ -28,6 +28,7 @@ import { calculateMAO } from "@/lib/profitAnalysis";
 import { calculateEquityPercent, calculateEquityDollars } from "@/lib/equity";
 import { LeadMediaUploader } from "@/components/admin/LeadMediaUploader";
 import { LeadPhotoGallery } from "@/components/admin/LeadPhotoGallery";
+import { CollapsiblePanel, CollapseOnSave } from "@/components/admin/CollapsiblePanel";
 import { formatDateOnly, formatRelativeTime } from "@/lib/utils";
 
 export const metadata = { title: "Lead Detail", robots: { index: false, follow: false } };
@@ -71,32 +72,55 @@ export default async function LeadDetailPage({
 
   if (!lead) notFound();
 
-  const { data: photoRows } = await supabase
-    .from("seller_property_photos")
-    .select("*")
-    .eq("submission_id", params.id);
-  const { data: videoRows } = await supabase
-    .from("seller_property_videos")
-    .select("*")
-    .eq("submission_id", params.id);
-  const { data: docRows } = await supabase
-    .from("seller_documents")
-    .select("*")
-    .eq("submission_id", params.id);
-  const { data: admins } = await supabase.from("admin_profiles").select("id, full_name");
-  const { data: activity } = await supabase
-    .from("activity_log")
-    .select("*")
-    .eq("seller_submission_id", params.id)
-    .order("created_at", { ascending: false });
+  // First wave: everything below only depends on the lead already fetched
+  // above, not on each other — so instead of ~10 sequential round trips to
+  // Supabase (each one waiting on the last), they all fire at once. This
+  // and the second wave further down are what actually make this page,
+  // easily the CRM's heaviest, show up quickly instead of sitting on a
+  // loading skeleton for several seconds.
+  const [
+    { data: photoRows },
+    { data: videoRows },
+    { data: docRows },
+    { data: admins },
+    { data: activity },
+    { data: repairItemRows },
+    { data: compRows },
+    { data: activeBuyers },
+    { data: existingDeal },
+    population,
+    duplicateRef,
+  ] = await Promise.all([
+    supabase.from("seller_property_photos").select("*").eq("submission_id", params.id),
+    supabase.from("seller_property_videos").select("*").eq("submission_id", params.id),
+    supabase.from("seller_documents").select("*").eq("submission_id", params.id),
+    supabase.from("admin_profiles").select("id, full_name"),
+    supabase
+      .from("activity_log")
+      .select("*")
+      .eq("seller_submission_id", params.id)
+      .order("created_at", { ascending: false }),
+    supabase.from("repair_items").select("*").eq("seller_submission_id", params.id),
+    supabase
+      .from("lead_comps")
+      .select("*")
+      .eq("seller_submission_id", params.id)
+      .order("sale_date", { ascending: false, nullsFirst: false }),
+    supabase.from("cash_buyers").select("*").eq("status", "Active"),
+    supabase.from("deals").select("id").eq("seller_submission_id", params.id).maybeSingle(),
+    lead.zip ? getPopulationForZip(lead.zip) : Promise.resolve(null),
+    lead.possible_duplicate_of
+      ? supabase
+          .from("seller_submissions")
+          .select("reference_number")
+          .eq("id", lead.possible_duplicate_of)
+          .maybeSingle()
+          .then((r) => r.data?.reference_number ?? null)
+      : Promise.resolve(null as string | null),
+  ]);
 
-  const population = lead.zip ? await getPopulationForZip(lead.zip) : null;
   const generateLocationInsightWithId = generateLocationInsight.bind(null, params.id, lead.zip);
 
-  const { data: repairItemRows } = await supabase
-    .from("repair_items")
-    .select("*")
-    .eq("seller_submission_id", params.id);
   const repairCostByCategory = new Map<string, number>();
   for (const r of (repairItemRows as RepairItem[]) ?? []) {
     repairCostByCategory.set(r.category, r.cost);
@@ -107,11 +131,6 @@ export default async function LeadDetailPage({
   const updateRepairItemsWithId = updateRepairItems.bind(null, params.id);
   const estimateRepairsWithAIWithId = estimateRepairsWithAIAction.bind(null, params.id);
 
-  const { data: compRows } = await supabase
-    .from("lead_comps")
-    .select("*")
-    .eq("seller_submission_id", params.id)
-    .order("sale_date", { ascending: false, nullsFirst: false });
   const comps = (compRows as LeadComp[]) ?? [];
   const compPrices = comps.map((c) => c.sale_price).filter((p): p is number => typeof p === "number");
   const avgCompPrice = compPrices.length ? compPrices.reduce((s, p) => s + p, 0) / compPrices.length : 0;
@@ -126,15 +145,25 @@ export default async function LeadDetailPage({
     .map((c) => (c.sale_price as number) / (c.square_feet as number));
   const avgPricePerSqft = pricesPerSqft.length ? pricesPerSqft.reduce((s, p) => s + p, 0) / pricesPerSqft.length : 0;
 
-  const { data: activeBuyers } = await supabase.from("cash_buyers").select("*").eq("status", "Active");
   const buyerIds = (activeBuyers ?? []).map((b) => b.id);
-  const [{ data: allZips }, { data: allCriteria }] = await Promise.all([
+
+  const photoBucket = process.env.SUPABASE_SELLER_PHOTOS_BUCKET || "seller-photos";
+  const videoBucket = process.env.SUPABASE_SELLER_VIDEOS_BUCKET || "seller-videos";
+  const docBucket = process.env.SUPABASE_SELLER_DOCS_BUCKET || "seller-documents";
+
+  // Second wave: these depend on the first wave's results (buyer ids,
+  // photo/video/doc rows) but not on each other, so they too run
+  // concurrently rather than one after another.
+  const [{ data: allZips }, { data: allCriteria }, photos, videos, documents] = await Promise.all([
     buyerIds.length
       ? supabase.from("buyer_zip_codes").select("*").in("buyer_id", buyerIds)
       : Promise.resolve({ data: [] as BuyerZipCode[] }),
     buyerIds.length
       ? supabase.from("buyer_investment_criteria").select("*").in("buyer_id", buyerIds)
       : Promise.resolve({ data: [] as BuyerInvestmentCriteria[] }),
+    Promise.all((photoRows ?? []).map(async (p) => ({ ...p, url: await getSignedUrl(photoBucket, p.storage_path) }))),
+    Promise.all((videoRows ?? []).map(async (v) => ({ ...v, url: await getSignedUrl(videoBucket, v.storage_path) }))),
+    Promise.all((docRows ?? []).map(async (d) => ({ ...d, url: await getSignedUrl(docBucket, d.storage_path) }))),
   ]);
 
   const zipsByBuyer = new Map<string, BuyerZipCode[]>();
@@ -145,36 +174,6 @@ export default async function LeadDetailPage({
   for (const c of (allCriteria as BuyerInvestmentCriteria[]) ?? []) {
     criteriaByBuyer.set(c.buyer_id, [...(criteriaByBuyer.get(c.buyer_id) ?? []), c]);
   }
-
-  const { data: existingDeal } = await supabase
-    .from("deals")
-    .select("id")
-    .eq("seller_submission_id", params.id)
-    .maybeSingle();
-
-  let duplicateRef: string | null = null;
-  if (lead.possible_duplicate_of) {
-    const { data: dup } = await supabase
-      .from("seller_submissions")
-      .select("reference_number")
-      .eq("id", lead.possible_duplicate_of)
-      .maybeSingle();
-    duplicateRef = dup?.reference_number ?? null;
-  }
-
-  const photoBucket = process.env.SUPABASE_SELLER_PHOTOS_BUCKET || "seller-photos";
-  const videoBucket = process.env.SUPABASE_SELLER_VIDEOS_BUCKET || "seller-videos";
-  const docBucket = process.env.SUPABASE_SELLER_DOCS_BUCKET || "seller-documents";
-
-  const photos = await Promise.all(
-    (photoRows ?? []).map(async (p) => ({ ...p, url: await getSignedUrl(photoBucket, p.storage_path) }))
-  );
-  const videos = await Promise.all(
-    (videoRows ?? []).map(async (v) => ({ ...v, url: await getSignedUrl(videoBucket, v.storage_path) }))
-  );
-  const documents = await Promise.all(
-    (docRows ?? []).map(async (d) => ({ ...d, url: await getSignedUrl(docBucket, d.storage_path) }))
-  );
 
   const updateLeadWithId = updateLead.bind(null, params.id);
   const l = lead as SellerSubmission;
@@ -275,10 +274,36 @@ export default async function LeadDetailPage({
         <FollowUpPanel lead={l} />
 
         <div id="underwriting" className="crm-water-hover scroll-mt-24 rounded-xl bg-white p-5 shadow-sm">
-          <h2 className="font-display text-lg font-semibold text-ink">Underwriting Snapshot</h2>
-          <p className="mt-1 text-xs text-ink/40">
-            Entered by your team, not auto-calculated from an outside source — verify comps before offering.
-          </p>
+          <CollapsiblePanel
+            title="Underwriting Snapshot"
+            subtitle="Entered by your team, not auto-calculated from an outside source — verify comps before offering."
+            anchorId="underwriting"
+            summary={
+              <div className="flex flex-col gap-2 text-sm">
+                <UnderwritingRow label="ARV (Estimated)" value={l.arv_estimate} tint="text-emerald-600" />
+                <UnderwritingRow label="Repairs" value={l.repair_estimate} tint="text-amber-600" />
+                <UnderwritingRow
+                  label={`Maximum Allowable Offer (${Math.round((l.mao_multiplier ?? 0.7) * 100)}%)`}
+                  value={l.arv_estimate != null ? calculateMAO(l.arv_estimate, l.repair_estimate ?? 0, l.mao_multiplier ?? 0.7) : null}
+                  tint="text-sky-600"
+                />
+                <UnderwritingRow label="Recommended Offer" value={l.recommended_offer} tint="text-violet-600" />
+                {(() => {
+                  const equityPct = calculateEquityPercent(l.current_value, l.mortgage_balance);
+                  return equityPct != null ? (
+                    <div className="flex items-center justify-between">
+                      <span className="text-ink/50">Equity</span>
+                      <span className={`font-bold ${equityPct >= 30 ? "text-emerald-600" : equityPct >= 0 ? "text-amber-600" : "text-red-600"}`}>
+                        {equityPct}%
+                      </span>
+                    </div>
+                  ) : null;
+                })()}
+                {l.comps_note && <p className="mt-1 text-xs text-ink/40">{l.comps_note}</p>}
+                <p className="mt-1 text-[11px] text-ink/35">Click to open comps, repair breakdown, and edit these numbers.</p>
+              </div>
+            }
+          >
           <div className="mt-3 flex flex-col gap-2 text-sm">
             <UnderwritingRow label="ARV (Estimated)" value={l.arv_estimate} tint="text-emerald-600" />
             <UnderwritingRow label="Repairs" value={l.repair_estimate} tint="text-amber-600" />
@@ -405,6 +430,7 @@ export default async function LeadDetailPage({
             >
               Save Underwriting
             </button>
+            <CollapseOnSave />
           </form>
 
           <div className="mt-5 border-t border-ink/10 pt-4">
@@ -605,6 +631,7 @@ export default async function LeadDetailPage({
               </button>
             </form>
           </div>
+          </CollapsiblePanel>
         </div>
       </div>
 
