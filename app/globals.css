@@ -205,16 +205,19 @@ a.crm-brand-chip:hover {
 }
 
 /*
- * CRM theme picker (four accent palettes x light/dark). This drives ONLY
- * the accent color used by the topbar/stat tiles/kanban tags/active nav
- * link (via the --crm-accent custom properties below) and swaps the main
- * canvas tint between the light "crm-canvas" recipe above and a dimmed
- * dark recipe. It intentionally does NOT recolor every card on every CRM
- * page to a dark surface — that's a full dark-mode pass, tracked
- * separately — so cards stay on a light surface in both modes for now.
- * Applied via data-crm-theme/data-crm-mode on the CRM shell wrapper,
- * set client-side by components/admin/ThemePicker.tsx and persisted in
- * localStorage, so switching needs no rebuild or server round trip.
+ * CRM theme picker (four accent palettes x light/dark). In light mode this
+ * drives ONLY the accent color used by the topbar/stat tiles/kanban
+ * tags/active nav link (via the --crm-accent custom properties below) —
+ * the four picker palettes (sage/sky/citrus/orchard) still apply there
+ * exactly as before. Dark mode is different: the owner asked for one
+ * specific look (a dark teal/navy canvas with an emerald glow, glassy
+ * cards) to BE "the" dark mode, regardless of which accent theme is
+ * picked — so every dark-mode variant below overrides --crm-accent to the
+ * same emerald, and the full card/text/border reskin further down applies
+ * uniformly too. Applied via data-crm-theme/data-crm-mode on the CRM shell
+ * wrapper, set client-side by components/admin/ThemePicker.tsx and
+ * persisted in localStorage, so switching needs no rebuild or server
+ * round trip.
  */
 .crm-shell {
   --crm-accent: #4f7a5c;
@@ -241,9 +244,22 @@ a.crm-brand-chip:hover {
   --crm-accent-soft-text: #5c4184;
 }
 
+/*
+ * Dark mode's own accent, the same regardless of which of the four accent
+ * themes above is picked — the owner's reference screenshot is one fixed
+ * emerald/teal look, not four palette variants of it.
+ */
+.crm-shell[data-crm-mode="dark"] {
+  --crm-accent: #10b981;
+  --crm-accent-dark: #059669;
+  --crm-accent-soft: rgba(16, 185, 129, 0.16);
+  --crm-accent-soft-text: #6ee7b7;
+}
+
 .crm-shell[data-crm-mode="dark"] .crm-canvas {
-  background-color: #0c0f14;
-  background-image: url("/crm-bg-dark.svg");
+  background-color: #06110f;
+  background-image: radial-gradient(ellipse 120% 55% at 50% -12%, rgba(16, 185, 129, 0.32), transparent 60%),
+    linear-gradient(165deg, #050d0f 0%, #081b1c 45%, #0a2320 100%);
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -259,6 +275,248 @@ a.crm-brand-chip:hover {
 .crm-accent-soft-bg {
   background-color: var(--crm-accent-soft);
   color: var(--crm-accent-soft-text);
+}
+
+/*
+ * Full dark-mode reskin — the owner's requested "copy this effect" pass.
+ * Everything below is scoped to .crm-shell[data-crm-mode="dark"] and only
+ * ever recolors classes that are ALREADY on these elements (bg-white,
+ * shadow-sm, text-ink/NN, border-ink/NN, the soft status-color washes,
+ * etc.) — no component markup changes anywhere, so nothing about how the
+ * CRM works, only how dark mode looks. Higher-specificity attribute-scoped
+ * selectors like this reliably win over the plain Tailwind utility they're
+ * overriding (same idea already used for .crm-brand-chip elsewhere in this
+ * file), so light mode is completely untouched by any of this.
+ */
+
+/* Card surfaces: every "bg-white ... shadow-sm" panel across the CRM
+   (dashboard tiles, lead-detail panels, Kanban columns, the sidebar's
+   nav chips already have their own dark styling and are unaffected)
+   becomes a glassy dark-teal card with a soft emerald edge glow. */
+.crm-shell[data-crm-mode="dark"] .bg-white {
+  background: linear-gradient(160deg, rgba(15, 37, 39, 0.92), rgba(7, 18, 20, 0.92));
+}
+.crm-shell[data-crm-mode="dark"] .shadow-sm {
+  box-shadow: 0 16px 36px -18px rgba(0, 0, 0, 0.7), 0 0 26px rgba(16, 185, 129, 0.1),
+    0 0 0 1px rgba(52, 211, 153, 0.14);
+}
+
+/* Primary text. */
+.crm-shell[data-crm-mode="dark"] .text-ink {
+  color: #eaf7f2;
+}
+.crm-shell[data-crm-mode="dark"] .text-ink\/80 {
+  color: rgba(234, 247, 242, 0.85);
+}
+.crm-shell[data-crm-mode="dark"] .text-ink\/70 {
+  color: rgba(234, 247, 242, 0.76);
+}
+.crm-shell[data-crm-mode="dark"] .text-ink\/60 {
+  color: rgba(234, 247, 242, 0.66);
+}
+.crm-shell[data-crm-mode="dark"] .text-ink\/50,
+.crm-shell[data-crm-mode="dark"] .hover\:text-ink\/60:hover {
+  color: rgba(234, 247, 242, 0.56);
+}
+.crm-shell[data-crm-mode="dark"] .text-ink\/45 {
+  color: rgba(234, 247, 242, 0.5);
+}
+.crm-shell[data-crm-mode="dark"] .text-ink\/40 {
+  color: rgba(234, 247, 242, 0.46);
+}
+.crm-shell[data-crm-mode="dark"] .text-ink\/35 {
+  color: rgba(234, 247, 242, 0.4);
+}
+.crm-shell[data-crm-mode="dark"] .text-ink\/30 {
+  color: rgba(234, 247, 242, 0.35);
+}
+.crm-shell[data-crm-mode="dark"] .text-ink\/25 {
+  color: rgba(234, 247, 242, 0.3);
+}
+.crm-shell[data-crm-mode="dark"] .text-ink\/20 {
+  color: rgba(234, 247, 242, 0.24);
+}
+.crm-shell[data-crm-mode="dark"] .hover\:text-ink:hover {
+  color: #eaf7f2;
+}
+
+/* Borders / dividers. */
+.crm-shell[data-crm-mode="dark"] .border-ink\/5 {
+  border-color: rgba(52, 211, 153, 0.08);
+}
+.crm-shell[data-crm-mode="dark"] .border-ink\/10 {
+  border-color: rgba(52, 211, 153, 0.14);
+}
+.crm-shell[data-crm-mode="dark"] .border-ink\/15 {
+  border-color: rgba(52, 211, 153, 0.2);
+}
+.crm-shell[data-crm-mode="dark"] .border-ink\/20 {
+  border-color: rgba(52, 211, 153, 0.26);
+}
+.crm-shell[data-crm-mode="dark"] .border-ink\/30 {
+  border-color: rgba(52, 211, 153, 0.32);
+}
+.crm-shell[data-crm-mode="dark"] .divide-ink\/5 > :not([hidden]) ~ :not([hidden]) {
+  border-color: rgba(52, 211, 153, 0.08);
+}
+.crm-shell[data-crm-mode="dark"] .divide-ink\/10 > :not([hidden]) ~ :not([hidden]) {
+  border-color: rgba(52, 211, 153, 0.14);
+}
+
+/* Neutral "ink" tinted fills — table-row hover states, muted chips,
+   skeleton/placeholder blocks. */
+.crm-shell[data-crm-mode="dark"] .bg-ink\/5,
+.crm-shell[data-crm-mode="dark"] .hover\:bg-ink\/5:hover,
+.crm-shell[data-crm-mode="dark"] .disabled\:bg-ink\/5:disabled {
+  background-color: rgba(52, 211, 153, 0.07);
+}
+.crm-shell[data-crm-mode="dark"] .bg-ink\/10 {
+  background-color: rgba(52, 211, 153, 0.12);
+}
+.crm-shell[data-crm-mode="dark"] .bg-ink\/15 {
+  background-color: rgba(52, 211, 153, 0.16);
+}
+.crm-shell[data-crm-mode="dark"] .bg-ink\/40 {
+  background-color: rgba(148, 163, 184, 0.4);
+}
+.crm-shell[data-crm-mode="dark"] .bg-cream,
+.crm-shell[data-crm-mode="dark"] .bg-cream\/30 {
+  background-color: rgba(16, 40, 42, 0.4);
+}
+.crm-shell[data-crm-mode="dark"] .bg-cream\/40,
+.crm-shell[data-crm-mode="dark"] .hover\:bg-cream\/40:hover {
+  background-color: rgba(52, 211, 153, 0.08);
+}
+.crm-shell[data-crm-mode="dark"] .bg-cream\/50 {
+  background-color: rgba(52, 211, 153, 0.1);
+}
+.crm-shell[data-crm-mode="dark"] .bg-cream\/60 {
+  background-color: rgba(52, 211, 153, 0.12);
+}
+
+/* Soft status-color washes (the pastel bg-*-50/100 badges used for
+   motivation, follow-up status, comp ratings, the Dead/Lost box, etc.) —
+   a light-mode pastel reads as a glaring white chip on this dark canvas,
+   so each becomes a translucent tint of the same hue with a brighter
+   foreground color to match. Solid, fully-saturated buttons/bars
+   (bg-*-500/600 and the Kanban stage bars) already have enough contrast
+   on a dark canvas and are left alone. */
+.crm-shell[data-crm-mode="dark"] .bg-red-50,
+.crm-shell[data-crm-mode="dark"] .hover\:bg-red-50:hover {
+  background-color: rgba(248, 113, 113, 0.12);
+}
+.crm-shell[data-crm-mode="dark"] .bg-red-100,
+.crm-shell[data-crm-mode="dark"] .hover\:bg-red-100:hover {
+  background-color: rgba(248, 113, 113, 0.2);
+}
+.crm-shell[data-crm-mode="dark"] .border-red-200,
+.crm-shell[data-crm-mode="dark"] .border-red-300 {
+  border-color: rgba(248, 113, 113, 0.35);
+}
+.crm-shell[data-crm-mode="dark"] .text-red-600,
+.crm-shell[data-crm-mode="dark"] .hover\:text-red-600:hover {
+  color: #f87171;
+}
+.crm-shell[data-crm-mode="dark"] .text-red-500,
+.crm-shell[data-crm-mode="dark"] .hover\:text-red-500:hover {
+  color: #fca5a5;
+}
+.crm-shell[data-crm-mode="dark"] .text-red-700,
+.crm-shell[data-crm-mode="dark"] .hover\:text-red-700:hover {
+  color: #fecaca;
+}
+
+.crm-shell[data-crm-mode="dark"] .bg-amber-50 {
+  background-color: rgba(251, 191, 36, 0.12);
+}
+.crm-shell[data-crm-mode="dark"] .bg-amber-100,
+.crm-shell[data-crm-mode="dark"] .hover\:bg-amber-100:hover {
+  background-color: rgba(251, 191, 36, 0.2);
+}
+.crm-shell[data-crm-mode="dark"] .border-amber-300 {
+  border-color: rgba(251, 191, 36, 0.35);
+}
+.crm-shell[data-crm-mode="dark"] .text-amber-600 {
+  color: #fbbf24;
+}
+.crm-shell[data-crm-mode="dark"] .text-amber-700 {
+  color: #fcd34d;
+}
+.crm-shell[data-crm-mode="dark"] .text-amber-800 {
+  color: #fde68a;
+}
+
+.crm-shell[data-crm-mode="dark"] .bg-sky-50 {
+  background-color: rgba(56, 189, 248, 0.12);
+}
+.crm-shell[data-crm-mode="dark"] .bg-sky-100,
+.crm-shell[data-crm-mode="dark"] .hover\:bg-sky-100:hover {
+  background-color: rgba(56, 189, 248, 0.2);
+}
+.crm-shell[data-crm-mode="dark"] .text-sky-600 {
+  color: #38bdf8;
+}
+.crm-shell[data-crm-mode="dark"] .text-sky-700 {
+  color: #7dd3fc;
+}
+
+.crm-shell[data-crm-mode="dark"] .bg-emerald-50 {
+  background-color: rgba(16, 185, 129, 0.14);
+}
+.crm-shell[data-crm-mode="dark"] .bg-emerald-100 {
+  background-color: rgba(16, 185, 129, 0.22);
+}
+.crm-shell[data-crm-mode="dark"] .text-emerald-600 {
+  color: #34d399;
+}
+.crm-shell[data-crm-mode="dark"] .text-emerald-700 {
+  color: #6ee7b7;
+}
+.crm-shell[data-crm-mode="dark"] .text-emerald-800 {
+  color: #a7f3d0;
+}
+
+.crm-shell[data-crm-mode="dark"] .bg-violet-50,
+.crm-shell[data-crm-mode="dark"] .bg-violet-50\/60 {
+  background-color: rgba(139, 92, 246, 0.12);
+}
+.crm-shell[data-crm-mode="dark"] .bg-violet-100,
+.crm-shell[data-crm-mode="dark"] .hover\:bg-violet-100:hover {
+  background-color: rgba(139, 92, 246, 0.22);
+}
+.crm-shell[data-crm-mode="dark"] .border-violet-200,
+.crm-shell[data-crm-mode="dark"] .border-violet-300 {
+  border-color: rgba(139, 92, 246, 0.35);
+}
+.crm-shell[data-crm-mode="dark"] .text-violet-600 {
+  color: #a78bfa;
+}
+.crm-shell[data-crm-mode="dark"] .text-violet-700 {
+  color: #c4b5fd;
+}
+
+.crm-shell[data-crm-mode="dark"] .bg-indigo-100 {
+  background-color: rgba(99, 102, 241, 0.22);
+}
+.crm-shell[data-crm-mode="dark"] .text-indigo-700 {
+  color: #a5b4fc;
+}
+.crm-shell[data-crm-mode="dark"] .text-indigo-800 {
+  color: #c7d2fe;
+}
+
+.crm-shell[data-crm-mode="dark"] .bg-orange-100 {
+  background-color: rgba(249, 115, 22, 0.22);
+}
+.crm-shell[data-crm-mode="dark"] .text-orange-800 {
+  color: #fdba74;
+}
+
+.crm-shell[data-crm-mode="dark"] .bg-teal-100 {
+  background-color: rgba(45, 212, 191, 0.22);
+}
+.crm-shell[data-crm-mode="dark"] .text-teal-800 {
+  color: #5eead4;
 }
 
 /*
