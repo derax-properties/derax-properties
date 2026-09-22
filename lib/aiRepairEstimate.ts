@@ -73,7 +73,13 @@ Respond with ONLY a JSON object, no other text, in exactly this shape:
       },
       body: JSON.stringify({
         model: MODEL,
-        max_tokens: 1024,
+        // The response is always just a small JSON object (one number per
+        // checked category, plus one short sentence). 600 comfortably
+        // covers even every category being checked at once (30 today),
+        // while still capping a worst-case slow response well below the
+        // old 1024 — without risking a genuinely large selection getting
+        // cut off mid-JSON and failing to parse.
+        max_tokens: 600,
         messages: [{ role: "user", content: prompt }],
       }),
     });

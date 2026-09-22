@@ -29,6 +29,7 @@ import { calculateEquityPercent, calculateEquityDollars } from "@/lib/equity";
 import { LeadMediaUploader } from "@/components/admin/LeadMediaUploader";
 import { LeadPhotoGallery } from "@/components/admin/LeadPhotoGallery";
 import { CollapsiblePanel, SaveAndCollapseButton } from "@/components/admin/CollapsiblePanel";
+import { SubmitButton } from "@/components/admin/SubmitButton";
 import { formatDateOnly, formatRelativeTime } from "@/lib/utils";
 
 export const metadata = { title: "Lead Detail", robots: { index: false, follow: false } };
@@ -541,29 +542,32 @@ export default async function LeadDetailPage({
                   <summary className="focus-gold cursor-pointer list-none rounded-full border border-violet-300 bg-violet-50 px-4 py-1.5 text-center text-xs font-semibold text-violet-700 hover:bg-violet-100">
                     ✨ Estimate with AI
                   </summary>
-                  <div className="mt-2 w-full rounded-lg border border-violet-200 bg-violet-50/60 p-3 sm:w-80">
-                    <p className="text-[11px] font-medium text-violet-700">
+                  <div className="mt-2 w-full rounded-lg border border-violet-200 bg-violet-50/60 p-4 sm:w-[440px]">
+                    <p className="text-xs font-medium text-violet-700">
                       Check which repairs actually apply — AI will estimate only these, leaving every other category untouched:
                     </p>
-                    <div className="mt-2 grid max-h-48 grid-cols-1 gap-1.5 overflow-y-auto sm:grid-cols-2">
+                    <div className="mt-3 grid max-h-80 grid-cols-1 gap-2 overflow-y-auto sm:grid-cols-2">
                       {[...REPAIR_CATEGORIES, ...customRepairCategories].map((category) => (
-                        <label key={category} className="flex items-center gap-1.5 text-[11px] text-ink/70">
+                        <label
+                          key={category}
+                          className="flex cursor-pointer items-center gap-3 rounded-lg border border-violet-200 bg-white px-3 py-3 text-sm font-medium text-ink/80 transition-colors has-[:checked]:border-violet-500 has-[:checked]:bg-violet-100"
+                        >
                           <input
                             type="checkbox"
                             name="ai_categories"
                             value={category}
-                            className="focus-gold h-3.5 w-3.5 rounded border-ink/20"
+                            className="focus-gold h-6 w-6 shrink-0 rounded border-2 border-violet-300 text-violet-600"
                           />
                           {category}
                         </label>
                       ))}
                     </div>
-                    <button
-                      type="submit"
-                      className="focus-gold mt-3 w-full rounded-full bg-violet-600 px-4 py-1.5 text-xs font-bold text-white hover:bg-violet-700"
+                    <SubmitButton
+                      pendingLabel="Estimating…"
+                      className="focus-gold mt-3 w-full rounded-full bg-violet-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-violet-700 disabled:opacity-70"
                     >
                       Estimate Selected →
-                    </button>
+                    </SubmitButton>
                   </div>
                 </details>
               </form>
