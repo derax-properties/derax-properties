@@ -1,6 +1,7 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { useFormStatus } from "react-dom";
 
 type CollapsibleContextValue = { setExpanded: (value: boolean) => void };
 const CollapsibleContext = createContext<CollapsibleContextValue | null>(null);
@@ -20,15 +21,14 @@ const CollapsibleContext = createContext<CollapsibleContextValue | null>(null);
  * render, so nothing about how the underlying section works has to change.
  *
  * Always starts collapsed on the very first paint, on both the server and
- * the client — this matters: reading `window.location.hash` directly in
- * useState's initializer (an earlier version of this file did that) gives
- * the server one answer (no `window`, so always "closed") and the browser
- * a possibly different one, which is a classic source of React getting
- * confused about what's actually on screen and later clicks behaving
- * unreliably. Instead, a plain effect flips it open *after* mount if a
- * link elsewhere (the Kanban board's "Underwrite Deal →" button, which
- * jumps to `#underwriting`) asked for it — and immediately clears that
- * hash from the URL so it can't keep forcing the panel back open later.
+ * the client — reading `window.location.hash` directly in useState's
+ * initializer (an earlier version of this file did that) gives the server
+ * one answer (no `window`, so always "closed") and the browser a possibly
+ * different one, which is a classic source of React getting confused about
+ * what's actually on screen. Instead, a plain effect flips it open *after*
+ * mount if a link elsewhere (the Kanban board's "Underwrite Deal →"
+ * button, which jumps to `#underwriting`) asked for it — and immediately
+ * clears that hash from the URL so it can't force the panel open again.
  */
 export function CollapsiblePanel({
   title,
@@ -49,9 +49,6 @@ export function CollapsiblePanel({
     if (!anchorId || typeof window === "undefined") return;
     if (window.location.hash === `#${anchorId}`) {
       setExpanded(true);
-      // Clear the hash once acted on, so it can't re-force this panel open
-      // again later (e.g. if the browser or Next.js ever re-mounts this
-      // component during the same page visit).
       window.history.replaceState(null, "", window.location.pathname + window.location.search);
     }
     // Only ever needs to run once, right after mount.
@@ -88,27 +85,45 @@ export function CollapsiblePanel({
 }
 
 /**
- * A submit button for a <form> that lives inside a CollapsiblePanel, which
- * folds the panel back to its summary the instant it's clicked — not after
- * the server action finishes. Eric asked for this to feel as instant as
- * tapping something on an iPhone, and waiting for a network round trip
- * before collapsing (which an earlier version of this did, via
- * useFormStatus) is exactly the "little delay" that didn't feel that way.
- * The save itself still proceeds completely normally in the background —
- * this only changes when the panel visually folds, not what gets saved.
- * Pass the same className/children you'd give a plain submit button.
+ * A submit button for a <form> inside a CollapsiblePanel that folds the
+ * panel back to its summary once that submission actually finishes.
+ *
+ * An earlier version of this collapsed the instant the button was clicked,
+ * to feel faster — but that's genuinely broken, not just a style choice:
+ * clicking a submit button collapsing the panel immediately unmounts the
+ * <form> (React swaps to rendering `summary` right away), and if that
+ * happens before the browser has dispatched the actual submission, the
+ * save never goes through at all — which is exactly the "I enter a value,
+ * hit save, and it just disappears" bug this replaces. The form has to
+ * stay mounted for the whole save, so this waits for useFormStatus's
+ * `pending` to go from true back to false (the save actually completing)
+ * before collapsing — and shows "Saving…" in the meantime so the wait
+ * (normally well under a second) still reads as immediate feedback rather
+ * than the button doing nothing.
  */
 export function SaveAndCollapseButton({
   className,
   children,
+  savingLabel = "Saving…",
 }: {
   className?: string;
   children: ReactNode;
+  savingLabel?: string;
 }) {
   const ctx = useContext(CollapsibleContext);
+  const { pending } = useFormStatus();
+  const wasPending = useRef(false);
+
+  useEffect(() => {
+    if (wasPending.current && !pending) {
+      ctx?.setExpanded(false);
+    }
+    wasPending.current = pending;
+  }, [pending, ctx]);
+
   return (
-    <button type="submit" className={className} onClick={() => ctx?.setExpanded(false)}>
-      {children}
+    <button type="submit" disabled={pending} className={className} aria-busy={pending}>
+      {pending ? savingLabel : children}
     </button>
   );
 }
