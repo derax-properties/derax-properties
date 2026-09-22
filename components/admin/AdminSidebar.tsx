@@ -84,8 +84,8 @@ export function AdminSidebar({
             <img src="/derax-mark.png" alt="" className="crm-logo-mark h-9 w-9 shrink-0" />
             {expanded && (
               <span className="flex flex-col whitespace-nowrap leading-none">
-                <span className="font-display text-lg font-extrabold text-cream">DERAX</span>
-                <span className="text-[9px] font-bold tracking-[0.35em] text-gold">CRM</span>
+                <span className="crm-logo-text-3d crm-logo-text-3d--cream font-display text-lg font-extrabold">DERAX</span>
+                <span className="crm-logo-text-3d crm-logo-text-3d--gold text-[9px] font-bold tracking-[0.35em]">CRM</span>
               </span>
             )}
           </Link>
