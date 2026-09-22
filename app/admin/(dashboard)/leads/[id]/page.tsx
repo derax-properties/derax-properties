@@ -28,7 +28,7 @@ import { calculateMAO } from "@/lib/profitAnalysis";
 import { calculateEquityPercent, calculateEquityDollars } from "@/lib/equity";
 import { LeadMediaUploader } from "@/components/admin/LeadMediaUploader";
 import { LeadPhotoGallery } from "@/components/admin/LeadPhotoGallery";
-import { CollapsiblePanel, CollapseOnSave } from "@/components/admin/CollapsiblePanel";
+import { CollapsiblePanel, SaveAndCollapseButton } from "@/components/admin/CollapsiblePanel";
 import { formatDateOnly, formatRelativeTime } from "@/lib/utils";
 
 export const metadata = { title: "Lead Detail", robots: { index: false, follow: false } };
@@ -424,13 +424,9 @@ export default async function LeadDetailPage({
                 className="focus-gold mt-1 w-full rounded-lg border border-ink/15 px-3 py-1.5 text-sm"
               />
             </div>
-            <button
-              type="submit"
-              className="focus-gold col-span-2 mt-1 self-start rounded-full bg-gold px-5 py-2 text-xs font-semibold text-ink hover:bg-gold-light"
-            >
+            <SaveAndCollapseButton className="focus-gold col-span-2 mt-1 self-start rounded-full bg-gold px-5 py-2 text-xs font-semibold text-ink hover:bg-gold-light">
               Save Underwriting
-            </button>
-            <CollapseOnSave />
+            </SaveAndCollapseButton>
           </form>
 
           <div className="mt-5 border-t border-ink/10 pt-4">
@@ -623,12 +619,9 @@ export default async function LeadDetailPage({
                   <input name="repair_new_notes" placeholder="Notes (optional)" className="focus-gold rounded-lg border border-ink/15 px-3 py-1.5 text-sm" />
                 </div>
               </div>
-              <button
-                type="submit"
-                className="focus-gold col-span-2 mt-1 self-end rounded-full bg-forest px-5 py-2 text-xs font-semibold text-white hover:bg-forest/90 sm:col-span-3"
-              >
+              <SaveAndCollapseButton className="focus-gold col-span-2 mt-1 self-end rounded-full bg-forest px-5 py-2 text-xs font-semibold text-white hover:bg-forest/90 sm:col-span-3">
                 Save Repair Breakdown
-              </button>
+              </SaveAndCollapseButton>
             </form>
           </div>
           </CollapsiblePanel>

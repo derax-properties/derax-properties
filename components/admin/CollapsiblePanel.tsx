@@ -1,7 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import { useFormStatus } from "react-dom";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
 type CollapsibleContextValue = { setExpanded: (value: boolean) => void };
 const CollapsibleContext = createContext<CollapsibleContextValue | null>(null);
@@ -20,10 +19,16 @@ const CollapsibleContext = createContext<CollapsibleContextValue | null>(null);
  * wrapper never inspects or clones them, it just decides which one to
  * render, so nothing about how the underlying section works has to change.
  *
- * `anchorId` lets a link elsewhere in the CRM (like the Kanban board's
- * "Underwrite Deal →" button, which jumps to `#underwriting`) land with
- * the panel already open instead of showing the collapsed summary at the
- * spot the user specifically asked to jump to.
+ * Always starts collapsed on the very first paint, on both the server and
+ * the client — this matters: reading `window.location.hash` directly in
+ * useState's initializer (an earlier version of this file did that) gives
+ * the server one answer (no `window`, so always "closed") and the browser
+ * a possibly different one, which is a classic source of React getting
+ * confused about what's actually on screen and later clicks behaving
+ * unreliably. Instead, a plain effect flips it open *after* mount if a
+ * link elsewhere (the Kanban board's "Underwrite Deal →" button, which
+ * jumps to `#underwriting`) asked for it — and immediately clears that
+ * hash from the URL so it can't keep forcing the panel back open later.
  */
 export function CollapsiblePanel({
   title,
@@ -38,16 +43,26 @@ export function CollapsiblePanel({
   summary: ReactNode;
   children: ReactNode;
 }) {
-  const [expanded, setExpanded] = useState(() => {
-    if (typeof window === "undefined" || !anchorId) return false;
-    return window.location.hash === `#${anchorId}`;
-  });
+  const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    if (!anchorId || typeof window === "undefined") return;
+    if (window.location.hash === `#${anchorId}`) {
+      setExpanded(true);
+      // Clear the hash once acted on, so it can't re-force this panel open
+      // again later (e.g. if the browser or Next.js ever re-mounts this
+      // component during the same page visit).
+      window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    }
+    // Only ever needs to run once, right after mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <CollapsibleContext.Provider value={{ setExpanded }}>
       <button
         type="button"
-        onClick={() => setExpanded((v) => !v)}
+        onClick={() => setExpanded((current) => !current)}
         aria-expanded={expanded}
         className="focus-gold flex w-full items-start justify-between gap-3 rounded-lg text-left"
       >
@@ -55,41 +70,45 @@ export function CollapsiblePanel({
           <h2 className="font-display text-lg font-semibold text-ink">{title}</h2>
           {subtitle && <p className="mt-1 text-xs text-ink/40">{subtitle}</p>}
         </div>
-        <span
-          className={`crm-water-hover mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-ink/10 text-ink/50 transition-transform ${
-            expanded ? "rotate-180" : ""
-          }`}
-          aria-hidden
-        >
-          ▾
+        <span className="mt-0.5 flex shrink-0 items-center gap-1 rounded-full border border-ink/10 px-2.5 py-1 text-[11px] font-semibold text-ink/50">
+          {expanded ? "Hide details" : "Details"}
+          <span
+            className="inline-block transition-transform duration-150 ease-out"
+            style={{ transform: expanded ? "rotate(180deg)" : "rotate(0deg)" }}
+            aria-hidden
+          >
+            ▾
+          </span>
         </span>
       </button>
 
-      {expanded ? <div className="mt-3">{children}</div> : <div className="mt-3">{summary}</div>}
+      <div className="mt-3">{expanded ? children : summary}</div>
     </CollapsibleContext.Provider>
   );
 }
 
 /**
- * Drop this inside a <form action={someServerAction}> that lives inside a
- * CollapsiblePanel to have the panel fold itself back to the summary once
- * that form's submission finishes — e.g. the "Save Underwriting" form, so
- * clicking Save both saves and collapses in one action, per how this was
- * asked for. Renders nothing itself; useFormStatus only works inside the
- * <form> it reports on, which is why this has to be a separate component
- * placed there rather than logic inside CollapsiblePanel itself.
+ * A submit button for a <form> that lives inside a CollapsiblePanel, which
+ * folds the panel back to its summary the instant it's clicked — not after
+ * the server action finishes. Eric asked for this to feel as instant as
+ * tapping something on an iPhone, and waiting for a network round trip
+ * before collapsing (which an earlier version of this did, via
+ * useFormStatus) is exactly the "little delay" that didn't feel that way.
+ * The save itself still proceeds completely normally in the background —
+ * this only changes when the panel visually folds, not what gets saved.
+ * Pass the same className/children you'd give a plain submit button.
  */
-export function CollapseOnSave() {
+export function SaveAndCollapseButton({
+  className,
+  children,
+}: {
+  className?: string;
+  children: ReactNode;
+}) {
   const ctx = useContext(CollapsibleContext);
-  const { pending } = useFormStatus();
-  const wasPending = useRef(false);
-
-  useEffect(() => {
-    if (wasPending.current && !pending) {
-      ctx?.setExpanded(false);
-    }
-    wasPending.current = pending;
-  }, [pending, ctx]);
-
-  return null;
+  return (
+    <button type="submit" className={className} onClick={() => ctx?.setExpanded(false)}>
+      {children}
+    </button>
+  );
 }
