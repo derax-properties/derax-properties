@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { getCurrentAdminProfile, isOwnerOrAdmin } from "@/lib/supabase/profile";
 
 export async function createBuyer(formData: FormData) {
   const supabase = createServerSupabaseClient();
@@ -135,4 +136,24 @@ export async function removeBuyerCriteria(buyerId: string, criteriaId: string) {
   const supabase = createServerSupabaseClient();
   await supabase.from("buyer_investment_criteria").delete().eq("id", criteriaId);
   revalidatePath(`/admin/buyers/${buyerId}`);
+}
+
+/**
+ * Permanently deletes a cash buyer. Their ZIP coverage and investment
+ * criteria rows cascade with them (`on delete cascade`). A deal already
+ * matched to this buyer is NOT deleted (deals.cash_buyer_id is `on delete
+ * set null`); the deal just loses its link back to this buyer.
+ *
+ * Restricted to Owner/Admin, mirroring the "Owners/Admins delete cash
+ * buyers" RLS policy — this check just fails fast with a clear no-op
+ * instead of a DB error; RLS is the real backstop either way.
+ */
+export async function deleteBuyer(id: string) {
+  const profile = await getCurrentAdminProfile();
+  if (!isOwnerOrAdmin(profile)) return;
+
+  const supabase = createServerSupabaseClient();
+  await supabase.from("cash_buyers").delete().eq("id", id);
+
+  revalidatePath("/admin/buyers");
 }

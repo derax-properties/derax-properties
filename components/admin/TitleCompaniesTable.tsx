@@ -2,15 +2,18 @@
 
 import { Fragment, useMemo, useState } from "react";
 import type { TitleCompany } from "@/lib/types";
+import { DeleteButton } from "@/components/admin/DeleteButton";
 
 export function TitleCompaniesTable({
   companies,
   onToggleStatus,
   onEdit,
+  onDelete,
 }: {
   companies: TitleCompany[];
   onToggleStatus: (id: string, nextStatus: "Active" | "Inactive") => Promise<void>;
   onEdit: (id: string, formData: FormData) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
 }) {
   const [search, setSearch] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -72,13 +75,21 @@ export function TitleCompaniesTable({
                   </button>
                 </td>
                 <td className="p-2 text-right">
-                  <button
-                    type="button"
-                    onClick={() => setEditingId(editingId === c.id ? null : c.id)}
-                    className="focus-gold text-xs font-semibold text-gold-dark hover:underline"
-                  >
-                    {editingId === c.id ? "Cancel" : "Edit"}
-                  </button>
+                  <div className="flex items-center justify-end gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setEditingId(editingId === c.id ? null : c.id)}
+                      className="focus-gold text-xs font-semibold text-gold-dark hover:underline"
+                    >
+                      {editingId === c.id ? "Cancel" : "Edit"}
+                    </button>
+                    <DeleteButton
+                      action={onDelete.bind(null, c.id)}
+                      confirmMessage={`Delete ${c.company_name} from your title companies? This cannot be undone.`}
+                      label="Delete"
+                      className="focus-gold text-xs font-semibold text-red-600 hover:underline disabled:opacity-50"
+                    />
+                  </div>
                 </td>
               </tr>
               {editingId === c.id && (

@@ -17,7 +17,9 @@ import {
   setFollowUp,
   setFollowUpFromForm,
   completeFollowUp,
+  deleteLead,
 } from "./actions";
+import { DeleteButton } from "@/components/admin/DeleteButton";
 import { FOLLOW_UP_TYPES, getFollowUpStatus, daysOverdue, dateOffset } from "@/lib/followUp";
 import { getPopulationForZip } from "@/lib/population";
 import { matchBuyersForLead, matchTier } from "@/lib/buyerMatching";
@@ -212,6 +214,12 @@ export default async function LeadDetailPage({
               </button>
             </form>
           )}
+          <DeleteButton
+            action={deleteLead.bind(null, params.id)}
+            confirmMessage={`Delete this lead (${l.property_address})? This also removes its activity log, repair breakdown, comps, photos, and videos. This cannot be undone.`}
+            label="Delete Lead"
+            redirectTo="/admin/leads"
+          />
         </div>
       </div>
 

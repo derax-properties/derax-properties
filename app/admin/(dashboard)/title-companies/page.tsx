@@ -1,6 +1,6 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { TitleCompany } from "@/lib/types";
-import { createTitleCompany, updateTitleCompanyStatus, updateTitleCompany } from "./actions";
+import { createTitleCompany, updateTitleCompanyStatus, updateTitleCompany, deleteTitleCompany } from "./actions";
 import { TitleCompaniesTable } from "@/components/admin/TitleCompaniesTable";
 import { PageHeader } from "@/components/admin/PageHeader";
 import { BuildingIcon } from "@/components/admin/icons";
@@ -25,6 +25,7 @@ export default async function TitleCompaniesPage() {
             companies={(companies as TitleCompany[]) ?? []}
             onToggleStatus={updateTitleCompanyStatus}
             onEdit={updateTitleCompany}
+            onDelete={deleteTitleCompany}
           />
         </div>
 

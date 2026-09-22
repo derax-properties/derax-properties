@@ -8,10 +8,12 @@ import {
   addBuyerCriteria,
   updateBuyerCriteria,
   removeBuyerCriteria,
+  deleteBuyer,
 } from "../actions";
 import { BuyerCriteriaList } from "@/components/admin/BuyerCriteriaList";
 import { PageHeader } from "@/components/admin/PageHeader";
 import { GroupIcon } from "@/components/admin/icons";
+import { DeleteButton } from "@/components/admin/DeleteButton";
 
 export const metadata = { title: "Buyer Detail — DERAX CRM", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
@@ -42,7 +44,19 @@ export default async function BuyerDetailPage({ params }: { params: { id: string
 
   return (
     <div>
-      <PageHeader icon={<GroupIcon className="h-5 w-5" />} title={b.full_name} subtitle={b.company_name ?? undefined} />
+      <PageHeader
+        icon={<GroupIcon className="h-5 w-5" />}
+        title={b.full_name}
+        subtitle={b.company_name ?? undefined}
+        action={
+          <DeleteButton
+            action={deleteBuyer.bind(null, params.id)}
+            confirmMessage={`Delete ${b.full_name} from your cash buyers? Their ZIP coverage and investment criteria will be removed too. This cannot be undone.`}
+            label="Delete Buyer"
+            redirectTo="/admin/buyers"
+          />
+        }
+      />
 
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
         <div className="rounded-xl bg-white p-5 shadow-sm">

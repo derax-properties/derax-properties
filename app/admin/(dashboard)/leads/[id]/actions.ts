@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { getCurrentAdminProfile } from "@/lib/supabase/profile";
+import { getCurrentAdminProfile, isOwnerOrAdmin } from "@/lib/supabase/profile";
 import { getPopulationForZip } from "@/lib/population";
 import { estimateRepairsWithAI } from "@/lib/aiRepairEstimate";
 
@@ -437,4 +437,28 @@ export async function logActivity(sellerSubmissionId: string, actorId: string | 
     action,
   });
   revalidatePath(`/admin/leads/${sellerSubmissionId}`);
+}
+
+/**
+ * Permanently deletes a lead. The row's own children (activity_log,
+ * repair_items, lead_comps, seller_property_photos/videos) are all set up
+ * with `on delete cascade` in the schema, so they're removed automatically —
+ * nothing needs deleting here by hand. A deal already created from this
+ * lead is NOT deleted (deals.seller_submission_id is `on delete set null`);
+ * the deal just loses its link back to this lead.
+ *
+ * Restricted to Owner/Admin — the same tier the "Owners/Admins can delete
+ * seller leads" RLS policy already enforces at the database level, so this
+ * check is only here to fail fast with a clear no-op rather than a DB
+ * error; RLS remains the real backstop either way.
+ */
+export async function deleteLead(id: string) {
+  const profile = await getCurrentAdminProfile();
+  if (!isOwnerOrAdmin(profile)) return;
+
+  const supabase = createServerSupabaseClient();
+  await supabase.from("seller_submissions").delete().eq("id", id);
+
+  revalidatePath("/admin/leads");
+  revalidatePath("/admin");
 }
