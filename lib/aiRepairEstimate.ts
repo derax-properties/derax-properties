@@ -60,6 +60,8 @@ Additional notes: ${input.additionalDetails ?? "None"}
 
 The admin has specifically flagged these repair categories as applicable to this property — estimate a rough repair cost in USD for ONLY these categories, reflecting typical Atlanta-area investor-grade (not retail) repair costs for a property in this condition: ${input.categories.join(", ")}.
 
+Price every category independently, as if it were the only category being estimated. A category's cost must reflect only that category's own typical scope of work for a property with this square footage/condition — never split, share, or balance a single overall renovation budget across categories, and never let the presence or absence of other checked categories change a given category's number. If this same property and this same category were estimated again in a separate request (alone, or together with a different set of other categories), your answer for that category must come out the same, because nothing about the underlying property changed.
+
 Respond with ONLY a JSON object, no other text, in exactly this shape:
 {"costs": {${input.categories.map((c) => `"${c}": number`).join(", ")}}, "summary": "one sentence explaining the condition-driven reasoning"}`;
 
@@ -80,6 +82,19 @@ Respond with ONLY a JSON object, no other text, in exactly this shape:
         // old 1024 — without risking a genuinely large selection getting
         // cut off mid-JSON and failing to parse.
         max_tokens: 600,
+        // Default temperature (1.0) lets the same category come back with
+        // a noticeably different number from one call to the next — which
+        // is exactly what was reported as "wrong" math: pricing Roof alone
+        // gave $24,000, but re-running Roof together with HVAC + Foundation
+        // gave a combined total lower than the Roof-alone number had been.
+        // Nothing about the property changed between those two calls, so
+        // that swing was randomness in the model's sampling, not a real
+        // reassessment. temperature: 0 makes the model pick its
+        // highest-probability answer every time instead of sampling, which
+        // is as close to "the same inputs give the same estimate" as this
+        // API offers — combined with the prompt instruction above to price
+        // each category independently regardless of what else is checked.
+        temperature: 0,
         messages: [{ role: "user", content: prompt }],
       }),
     });
