@@ -2,6 +2,18 @@ import { createAdminSupabaseClient } from "./supabase/admin";
 import type { ZipPopulationCache } from "./types";
 
 const CACHE_MAX_AGE_DAYS = 180;
+// A *failed* lookup (network hiccup, census.gov blocking the request that
+// day, etc.) is transient, not a fact about the ZIP — it should never be
+// remembered for as long as a real population number. Before this, a
+// single failure got cached as lookup_failed:true and then served back
+// as-is for up to 180 days, so fixing the actual cause (see the
+// User-Agent fix above) didn't help anyone who'd already hit the bug
+// once: they kept seeing "Population data unavailable" from the stale
+// failed cache row itself, never touching the (now-working) API again
+// until that row aged out. Retrying on every request when the cached
+// result was a failure — regardless of how old it is — means a fix like
+// that one takes effect on the very next click instead of up to 6 months
+// later.
 const DATA_YEAR = 2022; // ACS 5-year estimate vintage currently queried
 const DATA_SOURCE = "U.S. Census Bureau (ACS 5-Year, ZCTA)";
 
@@ -19,7 +31,7 @@ export async function getPopulationForZip(zip: string): Promise<ZipPopulationCac
   const admin = createAdminSupabaseClient();
 
   const { data: cached } = await admin.from("zip_population_cache").select("*").eq("zip", zip).maybeSingle();
-  if (cached) {
+  if (cached && !cached.lookup_failed) {
     const ageDays = (Date.now() - new Date(cached.updated_at).getTime()) / (1000 * 60 * 60 * 24);
     if (ageDays < CACHE_MAX_AGE_DAYS) return cached as ZipPopulationCache;
   }
