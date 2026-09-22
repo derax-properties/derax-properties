@@ -64,11 +64,19 @@ function toCsv(rows: SellerSubmission[]): string {
   return lines.join("\n");
 }
 
-export function LeadsTable({ leads, initialSearch = "" }: { leads: SellerSubmission[]; initialSearch?: string }) {
+export function LeadsTable({
+  leads,
+  initialSearch = "",
+  initialStatus = "",
+}: {
+  leads: SellerSubmission[];
+  initialSearch?: string;
+  initialStatus?: string;
+}) {
   const [search, setSearch] = useState(initialSearch);
   const [state, setState] = useState("");
   const [zip, setZip] = useState("");
-  const [status, setStatus] = useState("");
+  const [status, setStatus] = useState(initialStatus);
   const [propertyType, setPropertyType] = useState("");
   const [sort, setSort] = useState<SortKey>("newest");
 
@@ -106,6 +114,14 @@ export function LeadsTable({ leads, initialSearch = "" }: { leads: SellerSubmiss
 
   return (
     <div>
+      {/* Hidden — gives the voice-command bar a spoken result for a plain
+          name/address lookup, which (unlike the status/follow-up filters
+          above) has no other on-screen "Filtered: … (N)" banner to read. */}
+      {initialSearch && (
+        <span data-voice-announce hidden>
+          {filtered.length} {filtered.length === 1 ? "result" : "results"} for {initialSearch}
+        </span>
+      )}
       <div className="grid grid-cols-2 gap-3 rounded-xl bg-white p-4 shadow-sm sm:grid-cols-3 lg:grid-cols-6">
         <input
           type="search"

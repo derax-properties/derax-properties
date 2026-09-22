@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Link from "next/link";
 import { SearchIcon, BellIcon } from "./icons";
+import { VoiceCommand } from "./VoiceCommand";
 
 function initials(name: string | null): string {
   if (!name) return "?";
@@ -42,6 +43,8 @@ export function Topbar({ fullName, role, notificationCount }: { fullName: string
           className="w-full bg-transparent text-sm outline-none placeholder:text-ink/30"
         />
       </form>
+
+      <VoiceCommand />
 
       <Link href="/admin/leads" className="crm-water-hover focus-gold relative shrink-0 rounded-full p-2 text-ink/50 hover:bg-ink/5" title="Leads needing attention">
         <BellIcon className="h-5 w-5" />

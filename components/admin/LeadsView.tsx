@@ -8,6 +8,7 @@ import { LeadsKanban } from "./LeadsKanban";
 export function LeadsView({
   leads,
   initialSearch = "",
+  initialStatus = "",
   initialView,
   onAdvance,
   onMarkDead,
@@ -15,6 +16,7 @@ export function LeadsView({
 }: {
   leads: SellerSubmission[];
   initialSearch?: string;
+  initialStatus?: string;
   initialView?: "table" | "board";
   onAdvance: (id: string, toStage: PipelineStage) => Promise<void>;
   onMarkDead: (id: string, reason: DeadReason | string, note: string | null) => Promise<void>;
@@ -41,7 +43,7 @@ export function LeadsView({
       {view === "board" ? (
         <LeadsKanban leads={leads} onAdvance={onAdvance} onMarkDead={onMarkDead} onReopen={onReopen} />
       ) : (
-        <LeadsTable leads={leads} initialSearch={initialSearch} />
+        <LeadsTable leads={leads} initialSearch={initialSearch} initialStatus={initialStatus} />
       )}
     </div>
   );

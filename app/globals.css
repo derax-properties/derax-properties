@@ -635,6 +635,27 @@ a.crm-brand-chip:hover {
   }
 }
 
+/* Topbar voice-command mic (components/admin/VoiceCommand.tsx) — a soft
+   pulsing ring while actively listening, so it's obvious the mic is live
+   without needing to read any text. */
+.crm-voice-listening {
+  animation: crm-voice-pulse 1.4s ease-in-out infinite;
+}
+@keyframes crm-voice-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(233, 199, 90, 0.45);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(233, 199, 90, 0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .crm-voice-listening {
+    animation: none;
+  }
+}
+
 /*
  * Kanban card move, matching the pipeline-preview mockup: a card slides out
  * to the right and fades as it leaves its old column (crm-kanban-card-out),

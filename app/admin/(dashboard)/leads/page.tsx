@@ -17,7 +17,11 @@ const FOLLOWUP_LABELS: Record<string, string> = {
   none: "Leads with no follow-up scheduled",
 };
 
-export default async function AdminLeadsPage({ searchParams }: { searchParams: { search?: string; followup?: string } }) {
+export default async function AdminLeadsPage({
+  searchParams,
+}: {
+  searchParams: { search?: string; followup?: string; status?: string; motivation?: string };
+}) {
   const supabase = createServerSupabaseClient();
   const { data } = await supabase
     .from("seller_submissions")
@@ -39,6 +43,28 @@ export default async function AdminLeadsPage({ searchParams }: { searchParams: {
     });
   }
 
+  // ?status= and ?motivation= are additive filters on top of (or instead
+  // of) ?followup= — added so the voice-command search bar (see
+  // components/admin/VoiceCommand.tsx) can say "new leads", "qualified
+  // leads", or "hot leads" and land here already filtered, the same way
+  // "today's follow-ups" already worked before voice was added.
+  const statusFilter = searchParams.status;
+  if (statusFilter) {
+    leads = leads.filter((l) => l.status === statusFilter);
+  }
+  const motivationFilter = searchParams.motivation;
+  if (motivationFilter) {
+    leads = leads.filter((l) => l.motivation_level === motivationFilter);
+  }
+
+  const filterLabel = followup && FOLLOWUP_LABELS[followup]
+    ? FOLLOWUP_LABELS[followup]
+    : statusFilter
+    ? `${statusFilter} leads`
+    : motivationFilter
+    ? `${motivationFilter} leads`
+    : null;
+
   return (
     <div>
       <PageHeader
@@ -54,21 +80,28 @@ export default async function AdminLeadsPage({ searchParams }: { searchParams: {
           </Link>
         }
       />
-      {followup && FOLLOWUP_LABELS[followup] && (
+      {filterLabel && (
         <div className="mt-4 flex items-center justify-between rounded-lg bg-gold/10 px-4 py-2.5 text-sm">
           <span className="font-medium text-ink">
-            Filtered: {FOLLOWUP_LABELS[followup]} ({leads.length})
+            Filtered: {filterLabel} ({leads.length})
           </span>
           <Link href="/admin/leads" className="focus-gold font-semibold text-gold-dark hover:underline">
             Clear filter
           </Link>
+          {/* Hidden — not a UI change, just gives the voice-command bar
+              (components/admin/VoiceCommand.tsx) a natural-sounding
+              sentence to speak back after it navigates here. */}
+          <span data-voice-announce hidden>
+            {leads.length} {leads.length === 1 ? "lead" : "leads"} — {filterLabel}
+          </span>
         </div>
       )}
       <div className="mt-6">
         <LeadsView
           leads={leads}
           initialSearch={searchParams.search ?? ""}
-          initialView={followup ? "table" : undefined}
+          initialStatus={statusFilter ?? ""}
+          initialView={filterLabel ? "table" : undefined}
           onAdvance={advanceLeadStage}
           onMarkDead={markLeadDead}
           onReopen={reopenLead}
