@@ -12,6 +12,15 @@ export type GalleryPhoto = { id: string; url: string };
  * arrow buttons (plus ←/→ and Escape) to slide through the rest of the
  * lead's photos without ever leaving the page.
  *
+ * It opens at this medium "floating over the CRM" size by default, but a
+ * toggle button at the top of the photo switches to a full-screen size
+ * (the photo fills as much of the screen as it can) without closing or
+ * losing your place in the gallery — the arrows/keys still slide through
+ * the same photos either way. This is a plain CSS size swap rather than
+ * the browser's native Fullscreen API, specifically so it behaves the same
+ * on an iPhone as it does on desktop Chrome (iOS Safari's support for that
+ * API on arbitrary elements is unreliable).
+ *
  * Each gallery instance is self-contained and only ever cycles through the
  * list of photos it was given — the small top preview on the lead-detail
  * page passes just its first few, the full "Photos & Videos" panel passes
@@ -25,8 +34,12 @@ export function LeadPhotoGallery({
   gridClassName: string;
 }) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const [isFullScreen, setIsFullScreen] = useState(false);
 
-  const close = useCallback(() => setOpenIndex(null), []);
+  const close = useCallback(() => {
+    setOpenIndex(null);
+    setIsFullScreen(false);
+  }, []);
   const showPrev = useCallback(
     () => setOpenIndex((i) => (i === null ? null : (i - 1 + photos.length) % photos.length)),
     [photos.length]
@@ -68,7 +81,23 @@ export function LeadPhotoGallery({
       </div>
 
       {active && (
-        <div className="crm-lightbox-backdrop" onClick={close}>
+        <div
+          className={`crm-lightbox-backdrop ${isFullScreen ? "crm-lightbox-backdrop--full" : ""}`}
+          onClick={close}
+        >
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsFullScreen((f) => !f);
+            }}
+            aria-label={isFullScreen ? "Exit full screen" : "View full screen"}
+            title={isFullScreen ? "Exit full screen" : "View full screen"}
+            className="crm-lightbox-fullscreen-toggle"
+          >
+            {isFullScreen ? "⤡" : "⤢"}
+          </button>
+
           <button type="button" onClick={close} aria-label="Close photo" className="crm-lightbox-close">
             ✕
           </button>
@@ -87,9 +116,17 @@ export function LeadPhotoGallery({
             </button>
           )}
 
-          <div className="crm-lightbox-stage" onClick={(e) => e.stopPropagation()}>
+          <div
+            className={`crm-lightbox-stage ${isFullScreen ? "crm-lightbox-stage--full" : ""}`}
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img key={active.id} src={active.url} alt="" className="crm-lightbox-image" />
+            <img
+              key={active.id}
+              src={active.url}
+              alt=""
+              className={`crm-lightbox-image ${isFullScreen ? "crm-lightbox-image--full" : ""}`}
+            />
             {photos.length > 1 && (
               <p className="crm-lightbox-counter">
                 {(openIndex ?? 0) + 1} / {photos.length}

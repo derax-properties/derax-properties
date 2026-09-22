@@ -699,6 +699,19 @@ a.crm-brand-chip:hover {
   align-items: center;
   max-width: min(92vw, 1000px);
   max-height: 88vh;
+  transition: max-width 220ms ease, max-height 220ms ease;
+}
+
+/* Full-screen mode — a plain size swap (no browser Fullscreen API, see the
+   component's own comment for why), toggled by the ⤢ button at the top of
+   the photo. The backdrop loses its padding and the photo grows to fill
+   nearly the whole viewport instead of sitting in a smaller floating card. */
+.crm-lightbox-backdrop--full {
+  padding: 8px;
+}
+.crm-lightbox-stage--full {
+  max-width: 100vw;
+  max-height: 100vh;
 }
 
 .crm-lightbox-image {
@@ -710,6 +723,12 @@ a.crm-brand-chip:hover {
   box-shadow: 0 32px 70px -20px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.1),
     0 0 60px rgba(16, 185, 129, 0.15);
   animation: crm-lightbox-pop-in 340ms cubic-bezier(0.2, 0.9, 0.25, 1.15) both;
+  transition: max-width 220ms ease, max-height 220ms ease, border-radius 220ms ease;
+}
+.crm-lightbox-image--full {
+  max-width: 98vw;
+  max-height: 96vh;
+  border-radius: 6px;
 }
 
 @keyframes crm-lightbox-pop-in {
@@ -733,6 +752,7 @@ a.crm-brand-chip:hover {
 }
 
 .crm-lightbox-close,
+.crm-lightbox-fullscreen-toggle,
 .crm-lightbox-arrow {
   position: absolute;
   z-index: 101;
@@ -747,6 +767,7 @@ a.crm-brand-chip:hover {
   transition: background 180ms ease, transform 180ms ease;
 }
 .crm-lightbox-close:hover,
+.crm-lightbox-fullscreen-toggle:hover,
 .crm-lightbox-arrow:hover {
   background: rgba(255, 255, 255, 0.2);
 }
@@ -761,6 +782,22 @@ a.crm-brand-chip:hover {
 }
 .crm-lightbox-close:hover {
   transform: scale(1.08) rotate(90deg);
+}
+
+/* The second "how do you want to view this" option, sitting at the top of
+   the photo opposite the close button: toggles between the default
+   medium floating size and the full-screen size above, without closing
+   the lightbox or losing which photo/index you're on. */
+.crm-lightbox-fullscreen-toggle {
+  top: 20px;
+  left: 20px;
+  height: 40px;
+  width: 40px;
+  font-size: 18px;
+  line-height: 1;
+}
+.crm-lightbox-fullscreen-toggle:hover {
+  transform: scale(1.1);
 }
 
 .crm-lightbox-arrow {
