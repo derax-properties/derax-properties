@@ -65,9 +65,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <div className="flex min-h-screen flex-col lg:flex-row">
           <aside className="crm-sidebar flex flex-col justify-between gap-6 px-4 py-6 text-cream lg:w-56 lg:shrink-0">
             <div>
-              <Link href="/admin" className="crm-float-chip flex flex-col leading-none rounded-xl px-3 py-2.5">
-                <span className="font-display text-lg font-bold">DERAX</span>
-                <span className="text-[9px] font-semibold tracking-[0.35em] text-gold">CRM</span>
+              <Link href="/admin" className="crm-float-chip flex items-center gap-2 rounded-xl px-3 py-2.5">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/derax-mark.png" alt="" className="h-8 w-8 shrink-0" />
+                <span className="flex flex-col leading-none">
+                  <span className="font-display text-lg font-bold">DERAX</span>
+                  <span className="text-[9px] font-semibold tracking-[0.35em] text-gold">CRM</span>
+                </span>
               </Link>
               <nav className="mt-4 flex flex-row gap-2 overflow-x-auto lg:flex-col lg:overflow-visible">
                 {links.map((link) => (
