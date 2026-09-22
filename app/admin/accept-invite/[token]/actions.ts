@@ -38,10 +38,19 @@ export async function acceptInvite(formData: FormData) {
   });
 
   if (createError || !createdUser.user) {
-    const message = createError?.message?.includes("already registered")
-      ? "That email already has an account. Try signing in instead."
-      : "Could not create the account. Please try again.";
-    redirect(`/admin/accept-invite/${token}?error=${encodeURIComponent(message)}`);
+    // Already-registered is a common case here: someone re-clicks the
+    // one-time invite email as if it were a bookmark. Rather than leaving
+    // them stuck re-submitting the "create account" form, take them
+    // straight to the real sign-in page for their role with a clear note.
+    if (createError?.message?.includes("already registered")) {
+      const loginPath = invitation!.role === "va" ? "/agent-intake/login" : "/admin/login";
+      redirect(
+        `${loginPath}?error=${encodeURIComponent("You already have an account for this email — sign in below instead.")}`
+      );
+    }
+    redirect(
+      `/admin/accept-invite/${token}?error=${encodeURIComponent("Could not create the account. Please try again.")}`
+    );
   }
 
   await admin.from("admin_profiles").insert({

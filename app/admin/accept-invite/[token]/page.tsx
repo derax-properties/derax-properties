@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { acceptInvite } from "./actions";
 
@@ -30,11 +31,39 @@ export default async function AcceptInvitePage({
 
         {!isValid ? (
           <>
-            <h1 className="text-center font-display text-xl font-semibold text-ink">Invitation not found</h1>
+            <h1 className="text-center font-display text-xl font-semibold text-ink">
+              {invitation?.accepted_at ? "You already have an account" : "Invitation not found"}
+            </h1>
             <p className="mt-3 text-center text-sm text-ink/60">
-              This invitation link is invalid, has already been used, or has expired. Ask whoever
-              invited you to send a new one.
+              {invitation?.accepted_at
+                ? "This invitation link was already used to set up your account. You don't need to use it again — just sign in below with the email and password you already created."
+                : "This invitation link is invalid, has already been used, or has expired. Ask whoever invited you to send a new one."}
             </p>
+            {/*
+              Link back to a normal sign-in screen so a returning VA/Admin who
+              only ever kept the one-time invite email isn't stuck here —
+              this is the fix for "it keeps asking me to create an account
+              again": once accepted, this page now points them at the real
+              login page instead of a dead end.
+            */}
+            <Link
+              href={invitation?.role === "va" ? "/agent-intake/login" : "/admin/login"}
+              className="focus-gold mt-6 block w-full rounded-full bg-gold px-6 py-2.5 text-center text-sm font-semibold text-ink hover:bg-gold-light"
+            >
+              Go to Sign In
+            </Link>
+            {!invitation && (
+              <p className="mt-3 text-center text-xs text-ink/40">
+                Not sure which sign-in page you need?{" "}
+                <Link href="/agent-intake/login" className="font-semibold underline">
+                  Agent sign in
+                </Link>{" "}
+                ·{" "}
+                <Link href="/admin/login" className="font-semibold underline">
+                  Admin sign in
+                </Link>
+              </p>
+            )}
           </>
         ) : (
           <>
