@@ -38,6 +38,10 @@ export async function acceptInvite(formData: FormData) {
   });
 
   if (createError || !createdUser.user) {
+    // Log the real Supabase error so a failure here is diagnosable from
+    // Vercel's logs instead of just showing a generic message to the user.
+    console.error("[accept-invite] createUser failed:", createError?.message, createError);
+
     // Already-registered is a common case here: someone re-clicks the
     // one-time invite email as if it were a bookmark. Rather than leaving
     // them stuck re-submitting the "create account" form, take them
