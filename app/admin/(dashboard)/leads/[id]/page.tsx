@@ -274,7 +274,22 @@ export default async function LeadDetailPage({
 
         <FollowUpPanel lead={l} />
 
-        <div id="underwriting" className="crm-water-hover scroll-mt-24 rounded-xl bg-white p-5 shadow-sm">
+        {/*
+          No crm-water-hover here on purpose (other cards on this page have
+          it, this one deliberately doesn't). That class lifts + rotates +
+          scales the whole card on :hover via a CSS transform — which only
+          ever fires on a mouse (a touchscreen tap doesn't trigger a
+          lingering :hover the way a cursor does), so it's exactly why
+          "Hide details" was unreliable on Windows but fine on the iPhone:
+          moving the mouse onto this card to reach the small "Hide details"
+          pill in its corner kicks off a 420ms transform transition, and if
+          the click lands while the card (and the button inside it) is
+          still mid-shift, the click can miss the button's actual position
+          at that instant. A card full of buttons and form fields the admin
+          needs to hit precisely shouldn't also be animating out from under
+          the cursor.
+        */}
+        <div id="underwriting" className="scroll-mt-24 rounded-xl bg-white p-5 shadow-sm">
           <CollapsiblePanel
             title="Underwriting Snapshot"
             subtitle="Entered by your team, not auto-calculated from an outside source — verify comps before offering."
