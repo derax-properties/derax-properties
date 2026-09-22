@@ -63,7 +63,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <div className="crm-shell" data-crm-theme="sage" data-crm-mode="light">
       <div className="crm-canvas min-h-screen font-body text-ink">
         <div className="flex min-h-screen flex-col lg:flex-row">
-          <aside className="crm-sidebar flex flex-col justify-between px-4 py-6 text-cream lg:w-64 lg:shrink-0">
+          <aside className="crm-sidebar flex flex-col justify-between px-4 py-6 text-cream lg:w-56 lg:shrink-0">
             <div>
               <Link href="/admin" className="flex flex-col leading-none">
                 <span className="font-display text-lg font-bold">DERAX</span>

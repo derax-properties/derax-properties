@@ -2,7 +2,10 @@
 
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { getCurrentAdminProfile, isOwnerOrAdmin } from "@/lib/supabase/profile";
+import { ALLOWED_IMAGE_TYPES, MAX_FILE_SIZE_BYTES } from "@/lib/validation";
+import { LEAD_TYPES, type LeadType } from "@/lib/types";
 
 /**
  * Manual lead creation for Admin/Owner — the missing counterpart to the
@@ -30,6 +33,17 @@ export async function createLeadManually(formData: FormData) {
     redirect("/admin/leads/new?error=" + encodeURIComponent("Please fill in every required field."));
   }
 
+  const toNumberOrNull = (v: FormDataEntryValue | null) => {
+    if (typeof v !== "string" || v.trim() === "") return null;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+  };
+
+  const submittedLeadType = String(formData.get("lead_type") ?? "").trim();
+  const lead_type: LeadType | null = (LEAD_TYPES as readonly string[]).includes(submittedLeadType)
+    ? (submittedLeadType as LeadType)
+    : null;
+
   const payload = {
     first_name,
     last_name,
@@ -47,8 +61,10 @@ export async function createLeadManually(formData: FormData) {
     timeline: String(formData.get("timeline") ?? "").trim() || "Unknown",
     best_contact_time: String(formData.get("best_contact_time") ?? "").trim() || null,
     notes: String(formData.get("notes") ?? "").trim() || null,
+    current_value: toNumberOrNull(formData.get("current_value")),
+    mortgage_balance: toNumberOrNull(formData.get("mortgage_balance")),
     lead_source: "Self-Entered" as const,
-    lead_type: "Other" as const,
+    lead_type,
     created_by: profile.id,
   };
 
@@ -56,6 +72,33 @@ export async function createLeadManually(formData: FormData) {
 
   if (error || !data) {
     redirect("/admin/leads/new?error=" + encodeURIComponent(error?.message ?? "Could not save this lead."));
+  }
+
+  // Photos are optional and best-effort: a failed photo upload should never
+  // block the lead itself from being saved (the lead is already inserted
+  // above). Reuses the exact same bucket/table as the public website's
+  // upload route (app/api/seller-submissions/[id]/uploads/route.ts) so
+  // these show up in the same "Photos" panel on the lead page either way.
+  const photoFiles = formData.getAll("photos").filter((f): f is File => f instanceof File && f.size > 0);
+  if (photoFiles.length > 0 && data) {
+    const adminSupabase = createAdminSupabaseClient();
+    const bucket = process.env.SUPABASE_SELLER_PHOTOS_BUCKET || "seller-photos";
+
+    for (const file of photoFiles) {
+      if (file.size > MAX_FILE_SIZE_BYTES || !ALLOWED_IMAGE_TYPES.includes(file.type)) continue;
+      try {
+        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+        const storagePath = `${data.id}/${Date.now()}-${safeName}`;
+        const arrayBuffer = await file.arrayBuffer();
+        const { error: uploadError } = await adminSupabase.storage
+          .from(bucket)
+          .upload(storagePath, Buffer.from(arrayBuffer), { contentType: file.type, upsert: false });
+        if (uploadError) throw uploadError;
+        await adminSupabase.from("seller_property_photos").insert({ submission_id: data.id, storage_path: storagePath });
+      } catch (photoError) {
+        console.error("[leads/new] Photo upload failed:", photoError);
+      }
+    }
   }
 
   redirect(`/admin/leads/${data.id}`);

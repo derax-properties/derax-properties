@@ -4,6 +4,7 @@ import type { LeadStatus, SellerSubmission, Deal, DealStage, PipelineStage } fro
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatDate, formatDateOnly } from "@/lib/utils";
 import { getFollowUpStatus } from "@/lib/followUp";
+import { getSignedUrl } from "@/lib/storage";
 import { advanceLeadStage } from "./leads/actions";
 import { GroupIcon, FlameIcon, CalendarIcon, AlertClockIcon, DocumentIcon, PersonIcon } from "@/components/admin/icons";
 
@@ -77,17 +78,19 @@ export default async function AdminDashboardPage() {
     (l) => (l.status === "New" || l.status === "Contacted") && new Date(l.created_at) < threeDaysAgo
   ).length;
 
-  // Lead Intake Queue: every lead still short of Qualified (New Lead or
-  // Contacted — including one with no pipeline_stage set yet, which the
-  // rest of the CRM treats as "New Lead"), reviewed and sorted
+  // Lead Intake Queue: every lead still short of Qualified (Pre-Qualified —
+  // the stage every new lead lands in by default, including one with no
+  // pipeline_stage set yet — or Contacted), reviewed and sorted
   // automatically so nothing silently sits untouched before it's worth
   // qualifying. "Automated" here means two things, both derived rather
   // than stored so they can never drift out of sync: a lead is flagged
   // stale once it's sat 3+ days without moving (the same threshold the
   // "Overdue" stat tile above already uses), and the list is pre-sorted by
   // urgency (Hot motivation first, then Overdue/Due Today follow-ups, then
-  // longest-waiting) instead of just newest-first.
-  const PRE_QUALIFIED_STAGES = new Set(["New Lead", "Contacted"]);
+  // longest-waiting) instead of just newest-first. The "Mark Qualified"
+  // button on every row always targets Qualified directly (never Contacted)
+  // since that's the one click the owner actually wants from this queue.
+  const INTAKE_QUEUE_STAGES = new Set(["Pre-Qualified", "Contacted"]);
   const MOTIVATION_WEIGHT: Record<string, number> = { Hot: 3, Warm: 2, Cold: 1 };
   const FOLLOWUP_WEIGHT: Record<string, number> = { Overdue: 3, "Due Today": 2, Upcoming: 1 };
 
@@ -99,7 +102,7 @@ export default async function AdminDashboardPage() {
     .order("created_at", { ascending: true });
 
   const intakeLeads = (intakeLeadsRaw ?? [])
-    .filter((l) => PRE_QUALIFIED_STAGES.has(l.pipeline_stage ?? "New Lead"))
+    .filter((l) => INTAKE_QUEUE_STAGES.has(l.pipeline_stage ?? "Pre-Qualified"))
     .map((l) => {
       const daysWaiting = Math.max(0, Math.floor((Date.now() - new Date(l.created_at).getTime()) / (1000 * 60 * 60 * 24)));
       return {
@@ -131,6 +134,37 @@ export default async function AdminDashboardPage() {
   }, {} as Record<string, typeof activeDeals>);
 
   const pipelineValue = (activeDeals ?? []).reduce((sum, d) => sum + (d.purchase_price ?? 0), 0);
+
+  // Cover-photo thumbnails for the dashboard's lead lists. Only fetched for
+  // the leads actually shown here (Intake Queue's visible slice + Recent
+  // Seller Leads) — not every lead in the system — since this is a small
+  // per-page-load preview, not a full gallery. Signed URLs default to a
+  // short ~10min expiry (see lib/storage.ts), which is fine since this page
+  // is re-rendered fresh on every visit (`dynamic = "force-dynamic"` above).
+  const thumbLeadIds = Array.from(
+    new Set([...(leads ?? []).map((l) => l.id), ...intakeLeads.slice(0, 10).map((l) => l.id)])
+  );
+  const coverPhotoUrlById: Record<string, string> = {};
+  if (thumbLeadIds.length > 0) {
+    const { data: coverPhotoRows } = await supabase
+      .from("seller_property_photos")
+      .select("submission_id, storage_path")
+      .in("submission_id", thumbLeadIds)
+      .order("created_at", { ascending: true });
+
+    const firstPathById: Record<string, string> = {};
+    (coverPhotoRows ?? []).forEach((row) => {
+      if (!firstPathById[row.submission_id]) firstPathById[row.submission_id] = row.storage_path;
+    });
+
+    const photoBucket = process.env.SUPABASE_SELLER_PHOTOS_BUCKET || "seller-photos";
+    await Promise.all(
+      Object.entries(firstPathById).map(async ([leadId, path]) => {
+        const url = await getSignedUrl(photoBucket, path);
+        if (url) coverPhotoUrlById[leadId] = url;
+      })
+    );
+  }
 
   return (
     <div>
@@ -231,20 +265,28 @@ export default async function AdminDashboardPage() {
             </thead>
             <tbody>
               {intakeLeads.slice(0, 10).map((lead) => {
-                const nextStage: PipelineStage = lead.pipeline_stage === "Contacted" ? "Qualified" : "Contacted";
+                // Always Qualified — this queue's one job is getting a lead
+                // from "not yet Qualified" to Qualified in a single click,
+                // whether it's sitting in Pre-Qualified or Contacted.
+                const nextStage: PipelineStage = "Qualified";
                 return (
                   <tr key={lead.id} className="border-b border-ink/5 last:border-0 hover:bg-cream/40">
                     <td className="py-2.5">
-                      <Link href={`/admin/leads/${lead.id}`} className="focus-gold font-medium text-gold-dark hover:underline">
-                        {lead.first_name} {lead.last_name}
-                      </Link>
-                      <span className="block text-xs text-ink/40">
-                        {lead.city}, {lead.state}
-                      </span>
+                      <div className="flex items-center gap-2.5">
+                        <LeadThumbnail url={coverPhotoUrlById[lead.id]} />
+                        <div>
+                          <Link href={`/admin/leads/${lead.id}`} className="focus-gold font-medium text-gold-dark hover:underline">
+                            {lead.first_name} {lead.last_name}
+                          </Link>
+                          <span className="block text-xs text-ink/40">
+                            {lead.city}, {lead.state}
+                          </span>
+                        </div>
+                      </div>
                     </td>
                     <td className="py-2.5">
                       <span className="rounded-full bg-ink/5 px-2 py-0.5 text-xs font-semibold text-ink/60">
-                        {lead.pipeline_stage ?? "New Lead"}
+                        {lead.pipeline_stage ?? "Pre-Qualified"}
                       </span>
                     </td>
                     <td className="py-2.5">
@@ -359,7 +401,12 @@ export default async function AdminDashboardPage() {
                     </Link>
                   </td>
                   <td className="py-3">
-                    {lead.first_name} {lead.last_name}
+                    <div className="flex items-center gap-2.5">
+                      <LeadThumbnail url={coverPhotoUrlById[lead.id]} />
+                      <span>
+                        {lead.first_name} {lead.last_name}
+                      </span>
+                    </div>
                   </td>
                   <td className="py-3">
                     {lead.city}, {lead.state}
@@ -427,6 +474,23 @@ export default async function AdminDashboardPage() {
       </div>
     </div>
   );
+}
+
+// Small square cover-photo preview for a lead row. Plain <img>, not
+// next/image — matches how photos render elsewhere in the admin (lead
+// detail page's Photos panel) and avoids remote-pattern config for
+// short-lived signed URLs. Falls back to a muted placeholder when the
+// lead has no photos yet.
+function LeadThumbnail({ url }: { url?: string }) {
+  if (!url) {
+    return (
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-ink/5 text-ink/25">
+        <GroupIcon className="h-4 w-4" />
+      </span>
+    );
+  }
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={url} alt="" className="h-10 w-10 shrink-0 rounded-lg object-cover" />;
 }
 
 function StatTile({ icon, value, label, tint }: { icon: React.ReactNode; value: number; label: string; tint: string }) {

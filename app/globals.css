@@ -41,11 +41,22 @@ body {
  * untouched — this does not redefine any Tailwind color token, so nothing
  * outside these two classes changes.
  */
+/*
+ * Frosted-glass sidebar: ~40% opaque over the canvas background (see
+ * .crm-canvas) with a blur behind it, so the page's background image
+ * reads through instead of the sidebar being a flat opaque panel. The
+ * gradients are boosted slightly versus the old fully-opaque version so
+ * the gold/forest tint still shows through at the lower base opacity.
+ */
 .crm-sidebar {
-  background-color: #0c0f14;
-  background-image: linear-gradient(135deg, rgba(201, 162, 75, 0.07) 0%, transparent 40%),
-    linear-gradient(155deg, rgba(23, 58, 46, 0.45) 0%, transparent 55%),
-    linear-gradient(200deg, rgba(0, 0, 0, 0.4) 0%, transparent 70%);
+  background-color: rgba(12, 15, 20, 0.4);
+  background-image: linear-gradient(135deg, rgba(201, 162, 75, 0.12) 0%, transparent 40%),
+    linear-gradient(155deg, rgba(23, 58, 46, 0.55) 0%, transparent 55%),
+    linear-gradient(200deg, rgba(0, 0, 0, 0.35) 0%, transparent 70%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 6px 0 30px rgba(0, 0, 0, 0.18);
   position: relative;
 }
 
@@ -54,7 +65,7 @@ body {
   position: absolute;
   inset: 0 auto 0 0;
   width: 2px;
-  background: linear-gradient(180deg, rgba(201, 162, 75, 0.5), rgba(201, 162, 75, 0));
+  background: linear-gradient(180deg, rgba(201, 162, 75, 0.6), rgba(201, 162, 75, 0));
   pointer-events: none;
 }
 

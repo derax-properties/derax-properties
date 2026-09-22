@@ -108,6 +108,13 @@ export interface SellerSubmission {
   recommended_offer: number | null;
   comps_note: string | null;
   underwriting_updated_at: string | null;
+  // Equity snapshot: what's owed vs. what the property is worth today (as-is,
+  // not ARV — ARV assumes repairs are done, this doesn't). Equity % is never
+  // stored — it's derived from these two whenever both are present (see
+  // lib/equity.ts), so it can never drift out of sync with a later edit to
+  // either number.
+  mortgage_balance: number | null;
+  current_value: number | null;
 }
 
 export interface Property {
@@ -213,11 +220,13 @@ export const LEAD_SOURCES = [
 export type LeadSource = (typeof LEAD_SOURCES)[number];
 
 export const LEAD_TYPES = [
+  "Free and Clear",
   "Off-Market",
   "On-Market",
   "Trustee Sale",
   "Probate",
   "Pre-Foreclosure",
+  "Distressed",
   "Auction",
   "Tax Delinquent",
   "Vacant",
@@ -231,11 +240,18 @@ export const LEAD_TYPES = [
 ] as const;
 export type LeadType = (typeof LEAD_TYPES)[number];
 
-// New Lead -> Contacted -> Qualified -> Offer Made -> Negotiating ->
+// Pre-Qualified -> Contacted -> Qualified -> Offer Made -> Negotiating ->
 // Under Contract -> Disposition -> Closed, with Dead / Lost reachable from
 // any stage (see DEAD_REASONS) rather than being one more step in the chain.
+// Every new lead (website, manual entry, VA intake) lands in Pre-Qualified
+// by default — nothing sets pipeline_stage on insert, and every fallback
+// across the app already treats a null pipeline_stage as this first stage
+// (see LeadsKanban.tsx, leads/actions.ts, dashboard page.tsx). Contacted
+// stays a real, selectable stage (drag-and-drop or the lead detail page)
+// but the one-click "Advance" button on a Pre-Qualified card now jumps
+// straight to Qualified, matching how the owner actually works leads.
 export const PIPELINE_STAGES = [
-  "New Lead",
+  "Pre-Qualified",
   "Contacted",
   "Qualified",
   "Offer Made",

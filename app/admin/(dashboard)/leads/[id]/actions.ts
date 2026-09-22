@@ -92,6 +92,8 @@ export async function updateUnderwriting(id: string, formData: FormData) {
   const multiplier = formData.get("mao_multiplier");
   const recommended = formData.get("recommended_offer");
   const compsNote = formData.get("comps_note");
+  const mortgageBalance = formData.get("mortgage_balance");
+  const currentValue = formData.get("current_value");
 
   const toNumberOrNull = (v: FormDataEntryValue | null) => {
     if (typeof v !== "string" || v.trim() === "") return null;
@@ -108,6 +110,8 @@ export async function updateUnderwriting(id: string, formData: FormData) {
       mao_multiplier: toNumberOrNull(multiplier) ?? 0.7,
       recommended_offer: toNumberOrNull(recommended),
       comps_note: typeof compsNote === "string" ? compsNote.trim() || null : null,
+      mortgage_balance: toNumberOrNull(mortgageBalance),
+      current_value: toNumberOrNull(currentValue),
       underwriting_updated_at: new Date().toISOString(),
     })
     .eq("id", id);

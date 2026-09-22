@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { PageHeader } from "@/components/admin/PageHeader";
 import { GroupIcon } from "@/components/admin/icons";
+import { LeadPhotosField } from "@/components/admin/LeadPhotosField";
+import { LEAD_TYPES } from "@/lib/types";
 import { createLeadManually } from "./actions";
 
 const PROPERTY_TYPES = ["Single Family", "Multi-Family", "Condo", "Townhouse", "Mobile/Manufactured", "Land", "Other"];
@@ -22,7 +24,11 @@ export default function NewLeadPage({ searchParams }: { searchParams: { error?: 
         </p>
       )}
 
-      <form action={createLeadManually} className="mt-6 flex flex-col gap-4 rounded-2xl bg-white p-6 shadow-card">
+      <form
+        action={createLeadManually}
+        encType="multipart/form-data"
+        className="mt-6 flex flex-col gap-4 rounded-2xl bg-white p-6 shadow-card"
+      >
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="First Name" name="first_name" required />
           <Field label="Last Name" name="last_name" required />
@@ -61,16 +67,37 @@ export default function NewLeadPage({ searchParams }: { searchParams: { error?: 
           <Field label="State" name="state" required />
           <Field label="ZIP" name="zip" required />
         </div>
-        <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium text-ink/80">Property Type</label>
-          <select name="property_type" className="focus-gold rounded-lg border border-ink/15 px-3 py-2 text-sm" defaultValue="Single Family">
-            {PROPERTY_TYPES.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </select>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-ink/80">Property Type</label>
+            <select name="property_type" className="focus-gold rounded-lg border border-ink/15 px-3 py-2 text-sm" defaultValue="Single Family">
+              {PROPERTY_TYPES.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-ink/80">Situation</label>
+            <select name="lead_type" className="focus-gold rounded-lg border border-ink/15 px-3 py-2 text-sm" defaultValue="">
+              <option value="">Not sure yet</option>
+              {LEAD_TYPES.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field label="Current Value ($)" name="current_value" type="number" placeholder="As-is value, not ARV" />
+          <Field label="Mortgage Payoff Balance ($)" name="mortgage_balance" type="number" placeholder="0 if free and clear" />
+        </div>
+        <p className="-mt-2 text-xs text-ink/40">
+          Optional at intake — equity % is calculated automatically from these two once both are entered (here or later on the lead page).
+        </p>
 
         <hr className="border-ink/10" />
 
@@ -80,6 +107,10 @@ export default function NewLeadPage({ searchParams }: { searchParams: { error?: 
           <label className="text-sm font-medium text-ink/80">Notes</label>
           <textarea name="notes" rows={4} className="focus-gold rounded-lg border border-ink/15 px-3 py-2 text-sm" placeholder="Anything relevant from the call or visit" />
         </div>
+
+        <hr className="border-ink/10" />
+
+        <LeadPhotosField />
 
         <div className="mt-2 flex items-center gap-3">
           <button type="submit" className="focus-gold rounded-full bg-gold px-6 py-2.5 text-sm font-semibold text-ink hover:bg-gold-light">

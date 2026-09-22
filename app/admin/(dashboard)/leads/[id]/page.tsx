@@ -25,6 +25,7 @@ import type { CashBuyer, BuyerZipCode, BuyerInvestmentCriteria, RepairItem, Lead
 import { REPAIR_CATEGORIES, PIPELINE_STAGES, MOTIVATION_LEVELS, LEAD_SOURCES, LEAD_TYPES, DEAD_REASONS } from "@/lib/types";
 import { createDeal } from "../../deals/actions";
 import { calculateMAO } from "@/lib/profitAnalysis";
+import { calculateEquityPercent, calculateEquityDollars } from "@/lib/equity";
 import { formatDateOnly, formatRelativeTime } from "@/lib/utils";
 
 export const metadata = { title: "Lead Detail", robots: { index: false, follow: false } };
@@ -285,6 +286,32 @@ export default async function LeadDetailPage({
           </div>
           {l.comps_note && <p className="mt-2 text-xs text-ink/40">{l.comps_note}</p>}
 
+          <div className="mt-4 rounded-lg bg-cream/60 p-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase tracking-wide text-ink/50">Equity</span>
+              {(() => {
+                const equityPct = calculateEquityPercent(l.current_value, l.mortgage_balance);
+                return equityPct != null ? (
+                  <span className={`text-lg font-bold ${equityPct >= 30 ? "text-emerald-600" : equityPct >= 0 ? "text-amber-600" : "text-red-600"}`}>
+                    {equityPct}%
+                  </span>
+                ) : (
+                  <span className="text-xs text-ink/30">Enter both fields below</span>
+                );
+              })()}
+            </div>
+            <div className="mt-1.5 flex items-center justify-between text-xs text-ink/50">
+              <span>Current Value − Payoff Balance</span>
+              {(() => {
+                const equityDollars = calculateEquityDollars(l.current_value, l.mortgage_balance);
+                return equityDollars != null ? <span>${Math.round(equityDollars).toLocaleString()}</span> : null;
+              })()}
+            </div>
+            <p className="mt-1.5 text-[11px] text-ink/35">
+              A plain calculation from the two numbers below, not an AI estimate — equity is arithmetic, not judgment. It recalculates automatically whenever either number changes.
+            </p>
+          </div>
+
           <form action={updateUnderwriting.bind(null, params.id)} className="mt-4 grid grid-cols-2 gap-3 border-t border-ink/10 pt-4">
             <div>
               <label htmlFor="arv_estimate" className="text-xs font-medium text-ink/60">ARV Estimate ($)</label>
@@ -329,6 +356,30 @@ export default async function LeadDetailPage({
                 type="number"
                 step="500"
                 defaultValue={l.recommended_offer ?? ""}
+                className="focus-gold mt-1 w-full rounded-lg border border-ink/15 px-3 py-1.5 text-sm"
+              />
+            </div>
+            <div>
+              <label htmlFor="current_value" className="text-xs font-medium text-ink/60">Current Value ($)</label>
+              <input
+                id="current_value"
+                name="current_value"
+                type="number"
+                step="1000"
+                defaultValue={l.current_value ?? ""}
+                placeholder="As-is value, not ARV"
+                className="focus-gold mt-1 w-full rounded-lg border border-ink/15 px-3 py-1.5 text-sm"
+              />
+            </div>
+            <div>
+              <label htmlFor="mortgage_balance" className="text-xs font-medium text-ink/60">Mortgage Payoff Balance ($)</label>
+              <input
+                id="mortgage_balance"
+                name="mortgage_balance"
+                type="number"
+                step="1000"
+                defaultValue={l.mortgage_balance ?? ""}
+                placeholder="0 if free and clear"
                 className="focus-gold mt-1 w-full rounded-lg border border-ink/15 px-3 py-1.5 text-sm"
               />
             </div>

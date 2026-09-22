@@ -24,7 +24,7 @@ function FollowUpBadge({ lead }: { lead: SellerSubmission }) {
 }
 
 const STAGES: PipelineStage[] = [
-  "New Lead",
+  "Pre-Qualified",
   "Contacted",
   "Qualified",
   "Offer Made",
@@ -40,8 +40,14 @@ const STAGES: PipelineStage[] = [
 // the pipeline preview's rule that only forward-progress stages get a
 // button. Dead / Lost is reachable from ANY stage via the separate
 // "Mark Dead / Lost" action below, not through this forward chain.
+//
+// Pre-Qualified jumps straight to Qualified (skipping Contacted) — every
+// new lead lands in Pre-Qualified, and the one action the owner actually
+// wants from there is a single "Qualified" click. Contacted is still a
+// real stage (drag a card there, or set it from the lead detail page) —
+// it's just no longer the forced first step.
 const NEXT_STAGE: Partial<Record<PipelineStage, PipelineStage>> = {
-  "New Lead": "Contacted",
+  "Pre-Qualified": "Qualified",
   Contacted: "Qualified",
   Qualified: "Offer Made",
   "Offer Made": "Negotiating",
@@ -51,7 +57,7 @@ const NEXT_STAGE: Partial<Record<PipelineStage, PipelineStage>> = {
 };
 
 const STAGE_ACCENT: Record<PipelineStage, string> = {
-  "New Lead": "bg-sky-500",
+  "Pre-Qualified": "bg-sky-500",
   Contacted: "bg-violet-500",
   Qualified: "bg-emerald-500",
   "Offer Made": "bg-amber-500",
@@ -95,8 +101,8 @@ function TypePill({ type }: { type: SellerSubmission["lead_type"] }) {
 
 /**
  * A Kanban view of the same leads the table shows, grouped by
- * `pipeline_stage`. Leads with no pipeline_stage set yet land in "New Lead"
- * so nothing silently disappears from the board.
+ * `pipeline_stage`. Leads with no pipeline_stage set yet land in
+ * "Pre-Qualified" so nothing silently disappears from the board.
  *
  * Each card gets an "Advance →" button that moves it to the next stage —
  * the same one-click-forward interaction demoed in the pipeline preview
@@ -190,7 +196,7 @@ export function LeadsKanban({
   function handleDrop(leadId: string, toStage: PipelineStage) {
     const lead = localLeads.find((l) => l.id === leadId);
     if (!lead) return;
-    const fromStage = lead.pipeline_stage ?? "New Lead";
+    const fromStage = lead.pipeline_stage ?? "Pre-Qualified";
     if (toStage === fromStage) return;
 
     if (toStage === "Dead / Lost") {
@@ -209,7 +215,7 @@ export function LeadsKanban({
 
   const columns = STAGES.map((stage) => ({
     stage,
-    items: localLeads.filter((l) => (l.pipeline_stage ?? "New Lead") === stage),
+    items: localLeads.filter((l) => (l.pipeline_stage ?? "Pre-Qualified") === stage),
   }));
 
   return (

@@ -21,7 +21,7 @@ export async function advanceLeadStage(id: string, toStage: PipelineStage) {
   const profile = await getCurrentAdminProfile();
 
   const { data: current } = await supabase.from("seller_submissions").select("pipeline_stage").eq("id", id).maybeSingle();
-  const fromStage = current?.pipeline_stage ?? "New Lead";
+  const fromStage = current?.pipeline_stage ?? "Pre-Qualified";
 
   await supabase.from("seller_submissions").update({ pipeline_stage: toStage }).eq("id", id);
   await supabase.from("activity_log").insert({
@@ -48,7 +48,7 @@ export async function markLeadDead(id: string, reason: DeadReason | string, note
   const profile = await getCurrentAdminProfile();
 
   const { data: current } = await supabase.from("seller_submissions").select("pipeline_stage").eq("id", id).maybeSingle();
-  const fromStage = current?.pipeline_stage ?? "New Lead";
+  const fromStage = current?.pipeline_stage ?? "Pre-Qualified";
 
   await supabase
     .from("seller_submissions")
