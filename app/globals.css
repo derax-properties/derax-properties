@@ -42,17 +42,18 @@ body {
  * outside these two classes changes.
  */
 /*
- * Frosted-glass sidebar: ~40% opaque over the canvas background (see
- * .crm-canvas) with a blur behind it, so the page's background image
- * reads through instead of the sidebar being a flat opaque panel. The
- * gradients are boosted slightly versus the old fully-opaque version so
- * the gold/forest tint still shows through at the lower base opacity.
+ * Frosted-glass sidebar, recolored to match the DERAX logo mark's own
+ * green + wood-brown/gold palette (the owner asked for this exact color,
+ * having found the previous near-black glass hard to read). No more black
+ * layer at all now — the base is a translucent forest green with a
+ * warm wood-brown undertone, same family as the gold accent already used
+ * for the glass sheen.
  */
 .crm-sidebar {
-  background-color: rgba(12, 15, 20, 0.4);
-  background-image: linear-gradient(135deg, rgba(201, 162, 75, 0.12) 0%, transparent 40%),
-    linear-gradient(155deg, rgba(23, 58, 46, 0.55) 0%, transparent 55%),
-    linear-gradient(200deg, rgba(0, 0, 0, 0.35) 0%, transparent 70%);
+  background-color: rgba(24, 77, 57, 0.68);
+  background-image: linear-gradient(135deg, rgba(201, 162, 75, 0.28) 0%, transparent 45%),
+    linear-gradient(155deg, rgba(38, 107, 78, 0.65) 0%, transparent 55%),
+    linear-gradient(200deg, rgba(139, 94, 43, 0.32) 0%, transparent 65%);
   backdrop-filter: blur(24px) saturate(160%);
   -webkit-backdrop-filter: blur(24px) saturate(160%);
   border-right: 1px solid rgba(255, 255, 255, 0.08);
