@@ -285,8 +285,20 @@ export async function estimateRepairsWithAIAction(id: string, formData: FormData
       .toLocaleString()} · new total $${total.toLocaleString()}. ${result.summary}`,
   });
 
+  // Deliberately no redirect() here on success (unlike the two error cases
+  // above, which need one to attach ?error= to the URL). A redirect forces
+  // a full navigation, which is exactly what was making the "Estimate with
+  // AI" button feel like it "skipped": the browser jumps to the URL, the
+  // <details> popover snaps shut, and by the time the page settles the
+  // button is back to its resting label — so hitting it a second time for
+  // another category always felt like it needed an extra click to reopen
+  // everything first. revalidatePath alone is enough: Next.js refreshes
+  // this route's Server Component data in place, so the freshly-saved
+  // costs show up without any navigation — the <details> stays open, the
+  // checkboxes keep whatever was checked, and the button (via
+  // useFormStatus) flips straight from "Estimating…" back to "Estimate
+  // Selected →", ready to immediately check another box and go again.
   revalidatePath(`/admin/leads/${id}`);
-  redirect(`/admin/leads/${id}#underwriting`);
 }
 
 /**
