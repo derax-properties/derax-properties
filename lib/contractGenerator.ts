@@ -1,6 +1,7 @@
 import { DEFAULT_PURCHASE_AGREEMENT_TEMPLATE } from "./templates/purchaseAgreement";
 import { DEAL_SUMMARY_TEMPLATE, BUYER_PACKAGE_TEMPLATE } from "./templates/dealDocuments";
 import type { Deal, SellerSubmission, CashBuyer, TitleCompany, LeadComp } from "./types";
+import { formatLeadName } from "./utils";
 
 function fillTemplate(template: string, values: Record<string, string>): string {
   let merged = template;
@@ -138,7 +139,7 @@ export function mergePurchaseAgreement(
 ): string {
   const values: Record<string, string> = {
     today: new Date().toLocaleDateString("en-US"),
-    seller_name: `${lead.first_name} ${lead.last_name}`,
+    seller_name: formatLeadName(lead.first_name, lead.last_name),
     buyer_name: buyer?.full_name ?? "_______________________",
     buyer_company_line: buyer?.company_name ? ` (${buyer.company_name})` : "",
     property_address: lead.property_address,

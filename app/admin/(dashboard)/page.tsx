@@ -2,7 +2,7 @@ import Link from "next/link";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { LeadStatus, SellerSubmission, Deal, DealStage, PipelineStage } from "@/lib/types";
 import { StatusBadge } from "@/components/StatusBadge";
-import { formatDate, formatDateOnly } from "@/lib/utils";
+import { formatDate, formatDateOnly, formatLeadName } from "@/lib/utils";
 import { getFollowUpStatus } from "@/lib/followUp";
 import { getSignedUrl } from "@/lib/storage";
 import { advanceLeadStage } from "./leads/actions";
@@ -31,20 +31,45 @@ const SUMMARY_STATUSES: LeadStatus[] = [
 export default async function AdminDashboardPage() {
   const supabase = createServerSupabaseClient();
 
-  const { data: leads } = await supabase
-    .from("seller_submissions")
-    .select("id, reference_number, first_name, last_name, city, state, status, created_at")
-    .order("created_at", { ascending: false })
-    .limit(8);
-
-  const { data: allLeads } = await supabase.from("seller_submissions").select("status, motivation_level, created_at");
-
-  const { data: followUpLeadsRaw } = await supabase
-    .from("seller_submissions")
-    .select("id, reference_number, first_name, last_name, next_follow_up_date, follow_up_type, follow_up_completed_at, pipeline_stage")
-    .not("next_follow_up_date", "is", null)
-    .neq("pipeline_stage", "Dead / Lost")
-    .order("next_follow_up_date", { ascending: true });
+  // Five independent reads — none of these depend on each other, only on
+  // the current admin session — so they run as one concurrent wave instead
+  // of five sequential network round trips to Supabase. Same queries, same
+  // data, same order of appearance below; this only changes how long the
+  // dashboard sits waiting before it can render at all, which is the
+  // biggest lever on how "fast" the CRM feels when you click into it.
+  const [
+    { data: leads },
+    { data: allLeads },
+    { data: followUpLeadsRaw },
+    { data: intakeLeadsRaw },
+    { data: activeDeals },
+  ] = await Promise.all([
+    supabase
+      .from("seller_submissions")
+      .select("id, reference_number, first_name, last_name, city, state, status, created_at")
+      .order("created_at", { ascending: false })
+      .limit(8),
+    supabase.from("seller_submissions").select("status, motivation_level, created_at"),
+    supabase
+      .from("seller_submissions")
+      .select(
+        "id, reference_number, first_name, last_name, next_follow_up_date, follow_up_type, follow_up_completed_at, pipeline_stage"
+      )
+      .not("next_follow_up_date", "is", null)
+      .neq("pipeline_stage", "Dead / Lost")
+      .order("next_follow_up_date", { ascending: true }),
+    supabase
+      .from("seller_submissions")
+      .select(
+        "id, reference_number, first_name, last_name, city, state, pipeline_stage, motivation_level, created_at, next_follow_up_date, follow_up_completed_at"
+      )
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("deals")
+      .select("*, seller_submissions(reference_number, property_address, city, state)")
+      .not("stage", "in", '("Closed","Fell Through")')
+      .order("updated_at", { ascending: false }),
+  ]);
 
   const followUpCounts = { overdue: 0, dueToday: 0, upcoming: 0 };
   (followUpLeadsRaw ?? []).forEach((l) => {
@@ -94,13 +119,6 @@ export default async function AdminDashboardPage() {
   const MOTIVATION_WEIGHT: Record<string, number> = { Hot: 3, Warm: 2, Cold: 1 };
   const FOLLOWUP_WEIGHT: Record<string, number> = { Overdue: 3, "Due Today": 2, Upcoming: 1 };
 
-  const { data: intakeLeadsRaw } = await supabase
-    .from("seller_submissions")
-    .select(
-      "id, reference_number, first_name, last_name, city, state, pipeline_stage, motivation_level, created_at, next_follow_up_date, follow_up_completed_at"
-    )
-    .order("created_at", { ascending: true });
-
   const intakeLeads = (intakeLeadsRaw ?? [])
     .filter((l) => INTAKE_QUEUE_STAGES.has(l.pipeline_stage ?? "Pre-Qualified"))
     .map((l) => {
@@ -121,12 +139,6 @@ export default async function AdminDashboardPage() {
     });
 
   const staleIntakeCount = intakeLeads.filter((l) => l.stale).length;
-
-  const { data: activeDeals } = await supabase
-    .from("deals")
-    .select("*, seller_submissions(reference_number, property_address, city, state)")
-    .not("stage", "in", '("Closed","Fell Through")')
-    .order("updated_at", { ascending: false });
 
   const dealsByStage = DEAL_STAGES.reduce<Record<string, typeof activeDeals>>((acc, stage) => {
     acc[stage] = (activeDeals ?? []).filter((d) => d.stage === stage);
@@ -212,7 +224,7 @@ export default async function AdminDashboardPage() {
               return (
                 <li key={l.id} className="flex items-center justify-between gap-3 rounded-lg py-2 px-2 text-sm hover:bg-cream/40">
                   <Link href={`/admin/leads/${l.id}`} className="focus-gold font-medium text-gold-dark hover:underline">
-                    {l.first_name} {l.last_name} <span className="text-ink/40">({l.reference_number})</span>
+                    {formatLeadName(l.first_name, l.last_name)} <span className="text-ink/40">({l.reference_number})</span>
                   </Link>
                   <span className={`text-xs font-semibold ${s === "Overdue" ? "text-red-500" : s === "Due Today" ? "text-amber-600" : "text-ink/50"}`}>
                     {l.follow_up_type ? `${l.follow_up_type} · ` : ""}
@@ -276,7 +288,7 @@ export default async function AdminDashboardPage() {
                         <LeadThumbnail url={coverPhotoUrlById[lead.id]} />
                         <div>
                           <Link href={`/admin/leads/${lead.id}`} className="focus-gold font-medium text-gold-dark hover:underline">
-                            {lead.first_name} {lead.last_name}
+                            {formatLeadName(lead.first_name, lead.last_name)}
                           </Link>
                           <span className="block text-xs text-ink/40">
                             {lead.city}, {lead.state}
@@ -404,7 +416,7 @@ export default async function AdminDashboardPage() {
                     <div className="flex items-center gap-2.5">
                       <LeadThumbnail url={coverPhotoUrlById[lead.id]} />
                       <span>
-                        {lead.first_name} {lead.last_name}
+                        {formatLeadName(lead.first_name, lead.last_name)}
                       </span>
                     </div>
                   </td>

@@ -135,9 +135,11 @@ function useStepValidation(values: Values) {
     };
 
     const requireStep3 = () => {
-      if (!values.first_name.trim()) errors.first_name = "First name is required.";
-      if (!values.last_name.trim()) errors.last_name = "Last name is required.";
-      if (!values.phone.trim() || values.phone.replace(/\D/g, "").length < 10)
+      // first_name/last_name/phone are optional — the owner wants a lead
+      // saveable from just the property address, with contact details to
+      // follow later. If a phone number IS entered, still validate its
+      // format.
+      if (values.phone.trim() && values.phone.replace(/\D/g, "").length < 10)
         errors.phone = "Enter a valid phone number.";
       if (values.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email))
         errors.email = "Enter a valid email address.";
@@ -462,7 +464,6 @@ export function SellPropertyWizard() {
               <FormInput
                 id="first_name"
                 label="First Name"
-                required
                 value={values.first_name}
                 error={touchedErrors.first_name}
                 onChange={(e) => set("first_name", e.target.value)}
@@ -470,7 +471,6 @@ export function SellPropertyWizard() {
               <FormInput
                 id="last_name"
                 label="Last Name"
-                required
                 value={values.last_name}
                 error={touchedErrors.last_name}
                 onChange={(e) => set("last_name", e.target.value)}
@@ -481,7 +481,6 @@ export function SellPropertyWizard() {
                 id="phone"
                 type="tel"
                 label="Phone Number"
-                required
                 value={values.phone}
                 error={touchedErrors.phone}
                 onChange={(e) => set("phone", e.target.value)}
@@ -604,7 +603,7 @@ export function SellPropertyWizard() {
               />
             </ReviewSection>
             <ReviewSection title="Seller">
-              <ReviewRow label="Name" value={`${values.first_name} ${values.last_name}`} />
+              <ReviewRow label="Name" value={`${values.first_name} ${values.last_name}`.trim()} />
               <ReviewRow label="Phone" value={values.phone} />
               <ReviewRow label="Preferred Contact" value={values.preferred_contact} />
             </ReviewSection>

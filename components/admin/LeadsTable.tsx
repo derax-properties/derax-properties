@@ -5,7 +5,7 @@ import Link from "next/link";
 import type { SellerSubmission, LeadStatus, PropertyType } from "@/lib/types";
 import { StatusBadge } from "@/components/StatusBadge";
 import { ZipPopulationBadge } from "@/components/admin/ZipPopulationBadge";
-import { formatDate } from "@/lib/utils";
+import { formatDate, formatLeadName } from "@/lib/utils";
 
 const STATUSES: LeadStatus[] = [
   "New",
@@ -90,7 +90,7 @@ export function LeadsTable({
       if (propertyType && lead.property_type !== propertyType) return false;
       if (search) {
         const haystack =
-          `${lead.first_name} ${lead.last_name} ${lead.property_address} ${lead.city} ${lead.reference_number}`.toLowerCase();
+          `${formatLeadName(lead.first_name, lead.last_name)} ${lead.property_address} ${lead.city} ${lead.reference_number}`.toLowerCase();
         if (!haystack.includes(search.toLowerCase())) return false;
       }
       return true;
@@ -217,13 +217,17 @@ export function LeadsTable({
                   )}
                 </td>
                 <td className="p-3">
-                  {lead.first_name} {lead.last_name}
+                  {formatLeadName(lead.first_name, lead.last_name)}
                 </td>
                 <td className="p-3">
                   <div className="flex flex-col gap-0.5">
-                    <a href={`tel:${lead.phone.replace(/\D/g, "")}`} className="text-gold-dark hover:underline">
-                      {lead.phone}
-                    </a>
+                    {lead.phone ? (
+                      <a href={`tel:${lead.phone.replace(/\D/g, "")}`} className="text-gold-dark hover:underline">
+                        {lead.phone}
+                      </a>
+                    ) : (
+                      !lead.email && <span className="text-ink/30">Not provided</span>
+                    )}
                     {lead.email && (
                       <a href={`mailto:${lead.email}`} className="text-ink/50 hover:underline">
                         {lead.email}

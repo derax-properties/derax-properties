@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import type { SellerSubmission, PipelineStage, DeadReason } from "@/lib/types";
 import { DEAD_REASONS } from "@/lib/types";
 import { getFollowUpStatus, daysOverdue } from "@/lib/followUp";
-import { formatDateOnly } from "@/lib/utils";
+import { formatDateOnly, formatLeadName } from "@/lib/utils";
 import { ZipPopulationBadge } from "./ZipPopulationBadge";
 import { PersonIcon, PinIcon, PhoneIcon, DotsIcon } from "./icons";
 
@@ -73,7 +73,14 @@ const STAGE_ACCENT: Record<PipelineStage, string> = {
 // mode — name and the always-available action buttons only, everything
 // else (address, price, pills, follow-up) hidden — so a busy column reads
 // like a scannable list instead of getting taller and taller. Columns
-// below this stay exactly as detailed as before.
+// below this stay exactly as detailed as before, so a quiet column never
+// bothers with any of this.
+//
+// A compact card isn't a dead end, though: hovering it (see hoveredId
+// above) pops that one card back up to full size — its actual address and
+// everything else — right where the mouse is, then shrinks it back down
+// the instant the mouse leaves. So a busy column still reads as a short,
+// scannable list, but nothing on it is ever more than a hover away.
 const COMPACT_THRESHOLD = 6;
 
 function motivationDot(level: SellerSubmission["motivation_level"]) {
@@ -153,6 +160,13 @@ export function LeadsKanban({
   const [deadNote, setDeadNote] = useState("");
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOverStage, setDragOverStage] = useState<PipelineStage | null>(null);
+  // Which compact card (if any) the mouse is currently resting on, so that
+  // one card alone can pop back up to full size — address, price, pills,
+  // follow-up — while every other card in a busy column stays shrunk. Only
+  // ever meaningful for a compact card (see COMPACT_THRESHOLD below); a
+  // normal-size card ignores this entirely since it already shows
+  // everything all the time.
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   // Keep local state in sync whenever the server sends fresh data (e.g.
   // after router.refresh(), or a plain page reload) — otherwise this
@@ -289,6 +303,10 @@ export function LeadsKanban({
             {col.items.map((lead) => {
               const nextStage = NEXT_STAGE[col.stage];
               const isDeadColumn = col.stage === "Dead / Lost";
+              // Only a compact card ever zooms — a card that's already
+              // full-size has nothing more to reveal on hover.
+              const isZoomed = isCompact && hoveredId === lead.id;
+              const showDetails = !isCompact || isZoomed;
               return (
                 <div
                   key={lead.id}
@@ -301,9 +319,19 @@ export function LeadsKanban({
                     setDraggingId(null);
                     setDragOverStage(null);
                   }}
-                  className={`crm-water-hover relative cursor-grab rounded-lg border border-ink/10 text-sm shadow-sm active:cursor-grabbing ${
+                  onMouseEnter={() => {
+                    if (isCompact) setHoveredId(lead.id);
+                  }}
+                  onMouseLeave={() => setHoveredId((current) => (current === lead.id ? null : current))}
+                  // The zoom transform is set as an inline style rather than a
+                  // Tailwind class so it can't lose a specificity fight with
+                  // .crm-water-hover's own :hover rule (also a transform, also
+                  // active while the mouse is here) — inline style always
+                  // wins, so the zoom is exactly what's on screen, every time.
+                  style={isZoomed ? { transform: "scale(1.12)" } : undefined}
+                  className={`crm-water-hover relative cursor-grab rounded-lg border border-ink/10 text-sm shadow-sm transition-transform duration-150 ease-out active:cursor-grabbing ${
                     isCompact ? "p-2" : "p-3"
-                  } ${movingOutId === lead.id ? "crm-kanban-card-out" : ""} ${
+                  } ${isZoomed ? "z-20 bg-white p-3 shadow-xl" : ""} ${movingOutId === lead.id ? "crm-kanban-card-out" : ""} ${
                     justMovedId === lead.id ? "crm-kanban-card-in" : ""
                   } ${draggingId === lead.id ? "opacity-40" : ""}`}
                 >
@@ -311,7 +339,7 @@ export function LeadsKanban({
                     href={`/admin/leads/${lead.id}`}
                     className="focus-gold group block hover:opacity-90"
                   >
-                    {!isCompact && (
+                    {showDetails && (
                       <span className="pointer-events-none absolute right-2 top-2 text-ink/20">
                         <DotsIcon className="h-4 w-4" />
                       </span>
@@ -320,7 +348,7 @@ export function LeadsKanban({
                       <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${motivationDot(lead.motivation_level)}`} />
                       <PersonIcon className="h-3.5 w-3.5 shrink-0 text-ink/30" />
                       <span className="truncate font-medium text-ink">
-                        {lead.first_name} {lead.last_name}
+                        {formatLeadName(lead.first_name, lead.last_name)}
                       </span>
                     </div>
                     {/*
@@ -328,11 +356,13 @@ export function LeadsKanban({
                       hides everything below the name — address, price,
                       pills, follow-up — so the column reads as a scannable
                       list instead of getting taller with every lead added.
+                      Hovering a compact card (isZoomed) brings all of this
+                      back for that one card, same as a normal-size card.
                       The move/reopen/dead-lost buttons below are NEVER
                       hidden, compact or not — those stay one click away
                       no matter how many leads are in the column.
                     */}
-                    {!isCompact && (
+                    {showDetails && (
                       <>
                         <div className="mt-1.5 flex items-center gap-1.5 text-xs text-ink/50">
                           <PinIcon className="h-3.5 w-3.5 shrink-0" />

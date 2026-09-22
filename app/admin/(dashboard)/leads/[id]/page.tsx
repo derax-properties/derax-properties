@@ -30,7 +30,7 @@ import { LeadMediaUploader } from "@/components/admin/LeadMediaUploader";
 import { LeadPhotoGallery } from "@/components/admin/LeadPhotoGallery";
 import { CollapsiblePanel, SaveAndCollapseButton } from "@/components/admin/CollapsiblePanel";
 import { SubmitButton } from "@/components/admin/SubmitButton";
-import { formatDateOnly, formatRelativeTime } from "@/lib/utils";
+import { formatDateOnly, formatRelativeTime, formatLeadName } from "@/lib/utils";
 
 export const metadata = { title: "Lead Detail", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
@@ -234,7 +234,7 @@ export default async function LeadDetailPage({
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <div className="crm-water-hover rounded-xl bg-white p-5 shadow-sm">
-          <h2 className="font-display text-lg font-semibold text-ink">Lead Detail — {l.first_name} {l.last_name}</h2>
+          <h2 className="font-display text-lg font-semibold text-ink">Lead Detail — {formatLeadName(l.first_name, l.last_name)}</h2>
           <div className="mt-3 flex flex-col gap-2 text-sm">
             <Row label="Address" value={`${l.property_address}, ${l.city}, ${l.state} ${l.zip}`} />
             <Row label="Asking Price" value={l.asking_price ?? "Not specified"} />
@@ -242,18 +242,22 @@ export default async function LeadDetailPage({
             <Row label="Best Callback" value={l.best_callback_time ?? "—"} />
           </div>
           <div className="mt-4 flex flex-wrap gap-2">
-            <a
-              href={`tel:${l.phone.replace(/\D/g, "")}`}
-              className="focus-gold rounded-full border border-gold px-4 py-1.5 text-xs font-semibold text-gold-dark hover:bg-gold hover:text-ink"
-            >
-              Call
-            </a>
-            <a
-              href={`sms:${l.phone.replace(/\D/g, "")}`}
-              className="focus-gold rounded-full border border-gold px-4 py-1.5 text-xs font-semibold text-gold-dark hover:bg-gold hover:text-ink"
-            >
-              SMS
-            </a>
+            {l.phone && (
+              <>
+                <a
+                  href={`tel:${l.phone.replace(/\D/g, "")}`}
+                  className="focus-gold rounded-full border border-gold px-4 py-1.5 text-xs font-semibold text-gold-dark hover:bg-gold hover:text-ink"
+                >
+                  Call
+                </a>
+                <a
+                  href={`sms:${l.phone.replace(/\D/g, "")}`}
+                  className="focus-gold rounded-full border border-gold px-4 py-1.5 text-xs font-semibold text-gold-dark hover:bg-gold hover:text-ink"
+                >
+                  SMS
+                </a>
+              </>
+            )}
             {l.email && (
               <a
                 href={`mailto:${l.email}`}
@@ -667,19 +671,23 @@ export default async function LeadDetailPage({
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
         <div className="flex flex-col gap-6 lg:col-span-2">
           <Panel title="Seller">
-            <Row label="Name" value={`${l.first_name} ${l.last_name}`} />
+            <Row label="Name" value={formatLeadName(l.first_name, l.last_name)} />
             <Row
               label="Phone"
               value={
-                <div className="flex flex-wrap gap-3">
-                  <span>{l.phone}</span>
-                  <a href={`tel:${l.phone.replace(/\D/g, "")}`} className="text-gold-dark hover:underline">
-                    Call
-                  </a>
-                  <a href={`sms:${l.phone.replace(/\D/g, "")}`} className="text-gold-dark hover:underline">
-                    Text
-                  </a>
-                </div>
+                l.phone ? (
+                  <div className="flex flex-wrap gap-3">
+                    <span>{l.phone}</span>
+                    <a href={`tel:${l.phone.replace(/\D/g, "")}`} className="text-gold-dark hover:underline">
+                      Call
+                    </a>
+                    <a href={`sms:${l.phone.replace(/\D/g, "")}`} className="text-gold-dark hover:underline">
+                      Text
+                    </a>
+                  </div>
+                ) : (
+                  <span className="text-ink/40">Not provided</span>
+                )
               }
             />
             {l.email && (

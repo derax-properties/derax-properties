@@ -38,9 +38,9 @@ export interface SellerSubmission {
   id: string;
   reference_number: string;
   created_at: string;
-  first_name: string;
-  last_name: string;
-  phone: string;
+  first_name: string | null;
+  last_name: string | null;
+  phone: string | null;
   email: string | null;
   preferred_contact: "Phone" | "Text" | "Email";
   property_address: string;

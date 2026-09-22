@@ -29,7 +29,7 @@ export async function createLeadManually(formData: FormData) {
   const state = String(formData.get("state") ?? "").trim();
   const zip = String(formData.get("zip") ?? "").trim();
 
-  if (!first_name || !last_name || !phone || !property_address || !city || !state || !zip) {
+  if (!property_address || !city || !state || !zip) {
     redirect("/admin/leads/new?error=" + encodeURIComponent("Please fill in every required field."));
   }
 
@@ -45,9 +45,9 @@ export async function createLeadManually(formData: FormData) {
     : null;
 
   const payload = {
-    first_name,
-    last_name,
-    phone,
+    first_name: first_name || null,
+    last_name: last_name || null,
+    phone: phone || null,
     email: String(formData.get("email") ?? "").trim() || null,
     preferred_contact: String(formData.get("preferred_contact") ?? "Phone"),
     owner_status: String(formData.get("owner_status") ?? "Yes"),

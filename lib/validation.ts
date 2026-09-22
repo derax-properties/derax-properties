@@ -54,12 +54,16 @@ export const sellerSubmissionSchema = z.object({
   additional_details: z.string().max(3000).optional().or(z.literal("")),
 
   // Step 3 — Seller information
-  first_name: z.string().min(1, "First name is required."),
-  last_name: z.string().min(1, "Last name is required."),
+  // first_name/last_name/phone are optional — the owner wants a lead
+  // saveable from just the property address, with contact details to
+  // follow later. Only property_address/city/state/zip stay required.
+  first_name: z.string().optional().or(z.literal("")),
+  last_name: z.string().optional().or(z.literal("")),
   phone: z
     .string()
-    .min(10, "Enter a valid phone number.")
-    .regex(/^[\d\s()+-]{10,20}$/, "Enter a valid phone number."),
+    .regex(/^[\d\s()+-]{10,20}$/, "Enter a valid phone number.")
+    .optional()
+    .or(z.literal("")),
   email: z.string().email("Enter a valid email address.").optional().or(z.literal("")),
   preferred_contact: z.enum(["Phone", "Text", "Email"]),
   owner_status: z.enum(["Yes", "No"]),

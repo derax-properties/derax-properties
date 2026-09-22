@@ -24,6 +24,18 @@ async function safeSend(payload: Parameters<Resend["emails"]["send"]>[0]) {
   }
 }
 
+/**
+ * first_name/last_name/phone are all optional on seller_submissions now —
+ * a lead can be saved from just the property address, with the seller's
+ * details to follow later. These formatters keep those emails readable
+ * ("Unnamed Lead" / "Not provided") instead of rendering "null" or an
+ * empty string.
+ */
+function formatSellerName(first: string | null, last: string | null): string {
+  const name = `${first ?? ""} ${last ?? ""}`.trim();
+  return name || "Unnamed Lead";
+}
+
 export async function sendSellerLeadNotification(submission: SellerSubmission) {
   const dashboardLink = `${SITE_URL}/admin/leads/${submission.id}`;
 
@@ -33,8 +45,8 @@ export async function sendSellerLeadNotification(submission: SellerSubmission) {
     subject: `New Property Submission – ${submission.property_address}`,
     html: `
       <h2>New Seller Lead: ${submission.reference_number}</h2>
-      <p><strong>Seller:</strong> ${submission.first_name} ${submission.last_name}</p>
-      <p><strong>Phone:</strong> ${submission.phone}</p>
+      <p><strong>Seller:</strong> ${formatSellerName(submission.first_name, submission.last_name)}</p>
+      <p><strong>Phone:</strong> ${submission.phone ?? "Not provided"}</p>
       <p><strong>Email:</strong> ${submission.email ?? "Not provided"}</p>
       <p><strong>Property Address:</strong> ${submission.property_address}, ${submission.city}, ${submission.state} ${submission.zip}</p>
       <p><strong>Property Type:</strong> ${submission.property_type}</p>
@@ -62,7 +74,7 @@ export async function sendSellerConfirmationEmail(submission: SellerSubmission) 
     to: submission.email,
     subject: "We Received Your Property Information – Derax Properties",
     html: `
-      <p>Hi ${submission.first_name},</p>
+      <p>Hi ${submission.first_name || "there"},</p>
       <p>Thank you for submitting information about your property at ${submission.property_address}.
       Our team will review the details you provided and reach out if we need anything else or if the
       property fits our current buying criteria.</p>
@@ -78,8 +90,8 @@ export async function sendSellerConfirmationEmail(submission: SellerSubmission) 
 export interface DigestLead {
   id: string;
   reference_number: string;
-  first_name: string;
-  last_name: string;
+  first_name: string | null;
+  last_name: string | null;
   property_address: string;
   city: string;
   state: string;
@@ -106,7 +118,7 @@ export async function sendDailyFollowupDigest(leads: DigestLead[]) {
       return `
         <tr>
           <td style="padding:8px 12px;border-bottom:1px solid #eee;">${l.reference_number}${tag}</td>
-          <td style="padding:8px 12px;border-bottom:1px solid #eee;">${l.first_name} ${l.last_name}</td>
+          <td style="padding:8px 12px;border-bottom:1px solid #eee;">${formatSellerName(l.first_name, l.last_name)}</td>
           <td style="padding:8px 12px;border-bottom:1px solid #eee;">${l.property_address}, ${l.city}, ${l.state}</td>
           <td style="padding:8px 12px;border-bottom:1px solid #eee;">${l.status}</td>
           <td style="padding:8px 12px;border-bottom:1px solid #eee;"><a href="${link}">Open</a></td>

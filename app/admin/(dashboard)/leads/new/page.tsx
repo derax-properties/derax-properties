@@ -30,9 +30,9 @@ export default function NewLeadPage({ searchParams }: { searchParams: { error?: 
         className="mt-6 flex flex-col gap-4 rounded-2xl bg-white p-6 shadow-card"
       >
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="First Name" name="first_name" required />
-          <Field label="Last Name" name="last_name" required />
-          <Field label="Phone" name="phone" type="tel" required />
+          <Field label="First Name" name="first_name" />
+          <Field label="Last Name" name="last_name" />
+          <Field label="Phone" name="phone" type="tel" />
           <Field label="Email" name="email" type="email" />
         </div>
 

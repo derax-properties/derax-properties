@@ -84,3 +84,17 @@ export function isValidUSPhone(value: string): boolean {
 export function isValidZip(value: string): boolean {
   return /^\d{5}(-\d{4})?$/.test(value.trim());
 }
+
+/**
+ * seller_submissions.first_name/last_name are optional (a lead can be
+ * saved from just the property address, with the seller's name to follow
+ * later) — this keeps every "Name" cell/heading from rendering "null null"
+ * or a blank string when they haven't been filled in yet.
+ */
+export function formatLeadName(
+  first_name: string | null | undefined,
+  last_name: string | null | undefined
+): string {
+  const name = `${first_name ?? ""} ${last_name ?? ""}`.trim();
+  return name || "Unnamed Lead";
+}

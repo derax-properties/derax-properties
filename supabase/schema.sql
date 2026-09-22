@@ -50,9 +50,9 @@ create table if not exists seller_submissions (
   created_at timestamptz not null default now(),
 
   -- Seller
-  first_name text not null,
-  last_name text not null,
-  phone text not null,
+  first_name text,
+  last_name text,
+  phone text,
   email text,
   preferred_contact text not null check (preferred_contact in ('Phone', 'Text', 'Email')),
   owner_status text not null check (owner_status in ('Yes', 'No')),

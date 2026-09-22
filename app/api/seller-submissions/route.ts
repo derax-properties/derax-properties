@@ -28,25 +28,29 @@ export async function POST(request: Request) {
     // it's always saved as its own lead. If it matches an existing one by
     // phone, email, or the exact parsed address, we just link the two so
     // an admin can review and decide (see migration 0001).
-    const orFilters = [`phone.eq.${d.phone}`];
+    const orFilters: string[] = [];
+    if (d.phone) orFilters.push(`phone.eq.${d.phone}`);
     if (d.email) orFilters.push(`email.eq.${d.email}`);
     if (d.formatted_address) orFilters.push(`formatted_address.eq.${d.formatted_address}`);
 
-    const { data: possibleDuplicate } = await supabase
-      .from("seller_submissions")
-      .select("id")
-      .or(orFilters.join(","))
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    const { data: possibleDuplicate } =
+      orFilters.length > 0
+        ? await supabase
+            .from("seller_submissions")
+            .select("id")
+            .or(orFilters.join(","))
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle()
+        : { data: null };
 
     const { data, error } = await supabase
       .from("seller_submissions")
       .insert({
         possible_duplicate_of: possibleDuplicate?.id ?? null,
-        first_name: d.first_name,
-        last_name: d.last_name,
-        phone: d.phone,
+        first_name: d.first_name || null,
+        last_name: d.last_name || null,
+        phone: d.phone || null,
         email: d.email || null,
         preferred_contact: d.preferred_contact,
         owner_status: d.owner_status,
