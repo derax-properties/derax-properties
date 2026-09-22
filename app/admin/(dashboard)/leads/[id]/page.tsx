@@ -1,7 +1,8 @@
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { getSignedUrl } from "@/lib/storage";
+import { getSignedUrls } from "@/lib/storage";
 import type { SellerSubmission } from "@/lib/types";
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatDate } from "@/lib/utils";
@@ -75,43 +76,28 @@ export default async function LeadDetailPage({
 
   if (!lead) notFound();
 
-  // First wave: everything below only depends on the lead already fetched
-  // above, not on each other — so instead of ~10 sequential round trips to
-  // Supabase (each one waiting on the last), they all fire at once. This
-  // and the second wave further down are what actually make this page,
-  // easily the CRM's heaviest, show up quickly instead of sitting on a
-  // loading skeleton for several seconds.
+  // First wave: only what the page's *instant* shell needs to render —
+  // everything slower or less critical (population/Census lookup, buyer
+  // matching, activity log, comps + repair breakdown) now lives in its own
+  // Suspense-wrapped component further down, fetched independently so it
+  // can stream in after this shell instead of blocking it. This used to be
+  // one ~10-query wave that the whole page waited on; trimming it to just
+  // these six is most of why the page now shows something almost
+  // immediately instead of sitting on a loading skeleton for several
+  // seconds.
   const [
     { data: photoRows },
     { data: videoRows },
     { data: docRows },
     { data: admins },
-    { data: activity },
-    { data: repairItemRows },
-    { data: compRows },
-    { data: activeBuyers },
     { data: existingDeal },
-    population,
     duplicateRef,
   ] = await Promise.all([
     supabase.from("seller_property_photos").select("*").eq("submission_id", params.id),
     supabase.from("seller_property_videos").select("*").eq("submission_id", params.id),
     supabase.from("seller_documents").select("*").eq("submission_id", params.id),
     supabase.from("admin_profiles").select("id, full_name"),
-    supabase
-      .from("activity_log")
-      .select("*")
-      .eq("seller_submission_id", params.id)
-      .order("created_at", { ascending: false }),
-    supabase.from("repair_items").select("*").eq("seller_submission_id", params.id),
-    supabase
-      .from("lead_comps")
-      .select("*")
-      .eq("seller_submission_id", params.id)
-      .order("sale_date", { ascending: false, nullsFirst: false }),
-    supabase.from("cash_buyers").select("*").eq("status", "Active"),
     supabase.from("deals").select("id").eq("seller_submission_id", params.id).maybeSingle(),
-    lead.zip ? getPopulationForZip(lead.zip) : Promise.resolve(null),
     lead.possible_duplicate_of
       ? supabase
           .from("seller_submissions")
@@ -124,64 +110,26 @@ export default async function LeadDetailPage({
 
   const generateLocationInsightWithId = generateLocationInsight.bind(null, params.id, lead.zip);
 
-  const repairCostByCategory = new Map<string, number>();
-  for (const r of (repairItemRows as RepairItem[]) ?? []) {
-    repairCostByCategory.set(r.category, r.cost);
-  }
-  const customRepairCategories = [...repairCostByCategory.keys()].filter(
-    (c) => !(REPAIR_CATEGORIES as readonly string[]).includes(c)
-  );
-  const updateRepairItemsWithId = updateRepairItems.bind(null, params.id);
-  const estimateRepairsWithAIWithId = estimateRepairsWithAIAction.bind(null, params.id);
-
-  const comps = (compRows as LeadComp[]) ?? [];
-  const compPrices = comps.map((c) => c.sale_price).filter((p): p is number => typeof p === "number");
-  const avgCompPrice = compPrices.length ? compPrices.reduce((s, p) => s + p, 0) / compPrices.length : 0;
-  const sortedPrices = [...compPrices].sort((a, b) => a - b);
-  const medianCompPrice = sortedPrices.length
-    ? sortedPrices.length % 2 === 1
-      ? sortedPrices[(sortedPrices.length - 1) / 2]
-      : (sortedPrices[sortedPrices.length / 2 - 1] + sortedPrices[sortedPrices.length / 2]) / 2
-    : 0;
-  const pricesPerSqft = comps
-    .filter((c) => c.sale_price && c.square_feet)
-    .map((c) => (c.sale_price as number) / (c.square_feet as number));
-  const avgPricePerSqft = pricesPerSqft.length ? pricesPerSqft.reduce((s, p) => s + p, 0) / pricesPerSqft.length : 0;
-
-  const buyerIds = (activeBuyers ?? []).map((b) => b.id);
-
   const photoBucket = process.env.SUPABASE_SELLER_PHOTOS_BUCKET || "seller-photos";
   const videoBucket = process.env.SUPABASE_SELLER_VIDEOS_BUCKET || "seller-videos";
   const docBucket = process.env.SUPABASE_SELLER_DOCS_BUCKET || "seller-documents";
 
-  // Second wave: these depend on the first wave's results (buyer ids,
-  // photo/video/doc rows) but not on each other, so they too run
-  // concurrently rather than one after another.
-  const [{ data: allZips }, { data: allCriteria }, photos, videos, documents] = await Promise.all([
-    buyerIds.length
-      ? supabase.from("buyer_zip_codes").select("*").in("buyer_id", buyerIds)
-      : Promise.resolve({ data: [] as BuyerZipCode[] }),
-    buyerIds.length
-      ? supabase.from("buyer_investment_criteria").select("*").in("buyer_id", buyerIds)
-      : Promise.resolve({ data: [] as BuyerInvestmentCriteria[] }),
-    Promise.all((photoRows ?? []).map(async (p) => ({ ...p, url: await getSignedUrl(photoBucket, p.storage_path) }))),
-    Promise.all((videoRows ?? []).map(async (v) => ({ ...v, url: await getSignedUrl(videoBucket, v.storage_path) }))),
-    Promise.all((docRows ?? []).map(async (d) => ({ ...d, url: await getSignedUrl(docBucket, d.storage_path) }))),
+  // Signing every photo/video/document's URL used to be one Supabase
+  // Storage HTTP request PER FILE (run concurrently, but each still a full
+  // round trip) — a lead with a dozen photos meant a dozen requests. This
+  // batches each bucket's files into a single signing request instead.
+  const [photoUrlMap, videoUrlMap, docUrlMap] = await Promise.all([
+    getSignedUrls(photoBucket, (photoRows ?? []).map((p) => p.storage_path)),
+    getSignedUrls(videoBucket, (videoRows ?? []).map((v) => v.storage_path)),
+    getSignedUrls(docBucket, (docRows ?? []).map((d) => d.storage_path)),
   ]);
-
-  const zipsByBuyer = new Map<string, BuyerZipCode[]>();
-  for (const z of (allZips as BuyerZipCode[]) ?? []) {
-    zipsByBuyer.set(z.buyer_id, [...(zipsByBuyer.get(z.buyer_id) ?? []), z]);
-  }
-  const criteriaByBuyer = new Map<string, BuyerInvestmentCriteria[]>();
-  for (const c of (allCriteria as BuyerInvestmentCriteria[]) ?? []) {
-    criteriaByBuyer.set(c.buyer_id, [...(criteriaByBuyer.get(c.buyer_id) ?? []), c]);
-  }
+  const photos = (photoRows ?? []).map((p) => ({ ...p, url: photoUrlMap.get(p.storage_path) ?? null }));
+  const videos = (videoRows ?? []).map((v) => ({ ...v, url: videoUrlMap.get(v.storage_path) ?? null }));
+  const documents = (docRows ?? []).map((d) => ({ ...d, url: docUrlMap.get(d.storage_path) ?? null }));
 
   const updateLeadWithId = updateLead.bind(null, params.id);
   const l = lead as SellerSubmission;
   const reportedIssues = ISSUE_LABELS.filter(([key]) => l[key]).map(([, label]) => label);
-  const buyerMatches = matchBuyersForLead(l, (activeBuyers as CashBuyer[]) ?? [], zipsByBuyer, criteriaByBuyer);
 
   return (
     <div>
@@ -474,204 +422,18 @@ export default async function LeadDetailPage({
             </SaveAndCollapseButton>
           </form>
 
-          <div className="mt-5 border-t border-ink/10 pt-4">
-            <h3 className="text-sm font-semibold text-ink">Comparable Sales</h3>
-            {comps.length > 0 ? (
-              <>
-                <div className="mt-3 overflow-x-auto">
-                  <table className="w-full min-w-[640px] text-left text-xs">
-                    <thead>
-                      <tr className="text-ink/40">
-                        <th className="pb-1.5 pr-3 font-semibold">Address</th>
-                        <th className="pb-1.5 pr-3 font-semibold">Sale Price</th>
-                        <th className="pb-1.5 pr-3 font-semibold">Sale Date</th>
-                        <th className="pb-1.5 pr-3 font-semibold">Bd/Ba</th>
-                        <th className="pb-1.5 pr-3 font-semibold">Sq Ft</th>
-                        <th className="pb-1.5 pr-3 font-semibold">Dist.</th>
-                        <th className="pb-1.5 pr-3 font-semibold">Rating</th>
-                        <th className="pb-1.5"></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {comps.map((c) => (
-                        <tr key={c.id} className="border-t border-ink/5">
-                          <td className="py-1.5 pr-3 text-ink">{c.address}</td>
-                          <td className="py-1.5 pr-3 font-semibold text-ink">{c.sale_price ? `$${c.sale_price.toLocaleString()}` : "—"}</td>
-                          <td className="py-1.5 pr-3 text-ink/60">
-                            {c.sale_date ? (
-                              <>
-                                {formatDateOnly(c.sale_date)}
-                                <span className="block text-[10px] text-ink/35">{formatRelativeTime(c.sale_date)}</span>
-                              </>
-                            ) : (
-                              "—"
-                            )}
-                          </td>
-                          <td className="py-1.5 pr-3 text-ink/60">{c.bedrooms ?? "—"}/{c.bathrooms ?? "—"}</td>
-                          <td className="py-1.5 pr-3 text-ink/60">{c.square_feet?.toLocaleString() ?? "—"}</td>
-                          <td className="py-1.5 pr-3 text-ink/60">{c.distance_miles ? `${c.distance_miles} mi` : "—"}</td>
-                          <td className="py-1.5 pr-3">
-                            {c.comp_rating && (
-                              <span
-                                className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
-                                  c.comp_rating === "Strong" ? "bg-emerald-100 text-emerald-700" : c.comp_rating === "Fair" ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"
-                                }`}
-                              >
-                                {c.comp_rating}
-                              </span>
-                            )}
-                          </td>
-                          <td className="py-1.5 text-right">
-                            <form action={deleteComp.bind(null, l.id, c.id)}>
-                              <button type="submit" className="focus-gold text-[11px] font-semibold text-red-400 hover:text-red-600">
-                                Remove
-                              </button>
-                            </form>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                <p className="mt-2 text-[11px] text-ink/40">
-                  Avg sale price: <strong className="text-ink/60">${Math.round(avgCompPrice).toLocaleString()}</strong> · Median: <strong className="text-ink/60">${Math.round(medianCompPrice).toLocaleString()}</strong>
-                  {avgPricePerSqft ? (
-                    <>
-                      {" "}
-                      · Avg $/sq ft: <strong className="text-ink/60">${avgPricePerSqft.toFixed(0)}</strong>
-                    </>
-                  ) : null}
-                </p>
-              </>
-            ) : (
-              <p className="mt-2 text-xs text-ink/40">No comps added yet.</p>
-            )}
-
-            <form action={addComp.bind(null, l.id)} className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-              <input name="address" placeholder="Comp address *" required className="focus-gold col-span-2 rounded-lg border border-ink/15 px-2.5 py-1.5 text-xs sm:col-span-1" />
-              <input name="sale_price" type="number" placeholder="Sale price" className="focus-gold rounded-lg border border-ink/15 px-2.5 py-1.5 text-xs" />
-              <input name="sale_date" type="date" className="focus-gold rounded-lg border border-ink/15 px-2.5 py-1.5 text-xs" />
-              <input name="bedrooms" type="number" placeholder="Beds" className="focus-gold rounded-lg border border-ink/15 px-2.5 py-1.5 text-xs" />
-              <input name="bathrooms" type="number" step="0.5" placeholder="Baths" className="focus-gold rounded-lg border border-ink/15 px-2.5 py-1.5 text-xs" />
-              <input name="square_feet" type="number" placeholder="Sq ft" className="focus-gold rounded-lg border border-ink/15 px-2.5 py-1.5 text-xs" />
-              <input name="lot_size" placeholder="Lot size" className="focus-gold rounded-lg border border-ink/15 px-2.5 py-1.5 text-xs" />
-              <input name="distance_miles" type="number" step="0.1" placeholder="Distance (mi)" className="focus-gold rounded-lg border border-ink/15 px-2.5 py-1.5 text-xs" />
-              <select name="comp_rating" defaultValue="" className="focus-gold rounded-lg border border-ink/15 px-2.5 py-1.5 text-xs">
-                <option value="">Rating —</option>
-                <option value="Strong">Strong</option>
-                <option value="Fair">Fair</option>
-                <option value="Weak">Weak</option>
-              </select>
-              <input name="condition" placeholder="Condition" className="focus-gold rounded-lg border border-ink/15 px-2.5 py-1.5 text-xs" />
-              <input name="notes" placeholder="Notes" className="focus-gold col-span-2 rounded-lg border border-ink/15 px-2.5 py-1.5 text-xs sm:col-span-2" />
-              <button type="submit" className="focus-gold col-span-2 rounded-full bg-forest px-4 py-1.5 text-xs font-semibold text-white hover:bg-forest/90 sm:col-span-1">
-                + Add Comp
-              </button>
-            </form>
-            <p className="mt-2 text-[11px] text-ink/35">
-              Manual comps only — no live comparable-sales data source is connected. Wire up a property-data API later and imported comps will show separately from these.
-            </p>
-          </div>
-
-          <div className="mt-5 border-t border-ink/10 pt-4">
-            <div className="flex flex-wrap items-start justify-between gap-2">
-              <div>
-                <h3 className="text-sm font-semibold text-ink">Repair Estimate Breakdown</h3>
-                <p className="mt-1 text-xs text-ink/40">
-                  Enter a cost per category — the total replaces &quot;Repair Estimate ($)&quot; above automatically.
-                </p>
-              </div>
-              <form action={estimateRepairsWithAIWithId} className="w-full shrink-0 sm:w-auto">
-                <details className="group">
-                  <summary className="focus-gold cursor-pointer list-none rounded-full border border-violet-300 bg-violet-50 px-4 py-1.5 text-center text-xs font-semibold text-violet-700 hover:bg-violet-100">
-                    ✨ Estimate with AI
-                  </summary>
-                  <div className="mt-2 w-full rounded-lg border border-violet-200 bg-violet-50/60 p-4 sm:w-[440px]">
-                    <p className="text-xs font-medium text-violet-700">
-                      Check which repairs actually apply — AI will estimate only these, leaving every other category untouched:
-                    </p>
-                    <div className="mt-3 grid max-h-80 grid-cols-1 gap-2 overflow-y-auto sm:grid-cols-2">
-                      {[...REPAIR_CATEGORIES, ...customRepairCategories].map((category) => (
-                        <label
-                          key={category}
-                          className="flex cursor-pointer items-center gap-3 rounded-lg border border-violet-200 bg-white px-3 py-3 text-sm font-medium text-ink/80 transition-colors has-[:checked]:border-violet-500 has-[:checked]:bg-violet-100"
-                        >
-                          <input
-                            type="checkbox"
-                            name="ai_categories"
-                            value={category}
-                            className="focus-gold h-6 w-6 shrink-0 rounded border-2 border-violet-300 text-violet-600"
-                          />
-                          {category}
-                        </label>
-                      ))}
-                    </div>
-                    <SubmitButton
-                      pendingLabel="Estimating…"
-                      className="focus-gold mt-3 w-full rounded-full bg-violet-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-violet-700 disabled:opacity-70"
-                    >
-                      Estimate Selected →
-                    </SubmitButton>
-                  </div>
-                </details>
-              </form>
-            </div>
-            <p className="mt-2 rounded-lg bg-violet-50 px-3 py-2 text-[11px] text-violet-700">
-              AI-generated estimate — always verify against real comps and contractor quotes before making an offer.
-            </p>
-            {searchParams.error && (
-              <p className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-700" role="alert">
-                {searchParams.error}
-              </p>
-            )}
-            <form action={updateRepairItemsWithId} className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
-              {REPAIR_CATEGORIES.map((category) => (
-                <div key={category}>
-                  <label htmlFor={`repair_${category}`} className="text-xs font-medium text-ink/60">
-                    {category}
-                  </label>
-                  <input
-                    id={`repair_${category}`}
-                    name={`repair_${category}`}
-                    type="number"
-                    step="100"
-                    min="0"
-                    defaultValue={repairCostByCategory.get(category) ?? ""}
-                    placeholder="0"
-                    className="focus-gold mt-1 w-full rounded-lg border border-ink/15 px-3 py-1.5 text-sm"
-                  />
-                </div>
-              ))}
-              {customRepairCategories.map((category) => (
-                <div key={category}>
-                  <label htmlFor={`repair_${category}`} className="text-xs font-medium text-ink/60">
-                    {category} <span className="text-ink/30">(custom)</span>
-                  </label>
-                  <input
-                    id={`repair_${category}`}
-                    name={`repair_${category}`}
-                    type="number"
-                    step="100"
-                    min="0"
-                    defaultValue={repairCostByCategory.get(category) ?? ""}
-                    placeholder="0"
-                    className="focus-gold mt-1 w-full rounded-lg border border-ink/15 px-3 py-1.5 text-sm"
-                  />
-                </div>
-              ))}
-              <div className="col-span-2 rounded-lg border border-dashed border-ink/15 p-2 sm:col-span-3">
-                <p className="text-xs font-medium text-ink/60">+ Add Repair Item</p>
-                <div className="mt-1.5 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                  <input name="repair_new_name" placeholder="Category name" className="focus-gold rounded-lg border border-ink/15 px-3 py-1.5 text-sm sm:col-span-2" />
-                  <input name="repair_new_cost" type="number" step="100" min="0" placeholder="Cost" className="focus-gold rounded-lg border border-ink/15 px-3 py-1.5 text-sm" />
-                  <input name="repair_new_notes" placeholder="Notes (optional)" className="focus-gold rounded-lg border border-ink/15 px-3 py-1.5 text-sm" />
-                </div>
-              </div>
-              <SaveAndCollapseButton className="focus-gold col-span-2 mt-1 self-end rounded-full bg-forest px-5 py-2 text-xs font-semibold text-white hover:bg-forest/90 sm:col-span-3">
-                Save Repair Breakdown
-              </SaveAndCollapseButton>
-            </form>
-          </div>
+          {/*
+            Comps and the repair breakdown are two more of their own
+            queries (lead_comps, repair_items) that nothing outside this
+            expanded section depends on — streamed in separately so they
+            don't hold up the rest of the page either. They're only ever
+            visible once this panel is expanded anyway, so this also means
+            a collapsed Underwriting panel no longer costs those two
+            queries at all until someone actually opens it.
+          */}
+          <Suspense fallback={<p className="mt-5 border-t border-ink/10 pt-4 text-sm text-ink/40">Loading comps and repair breakdown…</p>}>
+            <UnderwritingDetails leadId={l.id} errorParam={searchParams.error} />
+          </Suspense>
           </CollapsiblePanel>
         </div>
       </div>
@@ -733,14 +495,18 @@ export default async function LeadDetailPage({
           </Panel>
 
           <Panel title="Location Intelligence">
-            {population && !population.lookup_failed ? (
-              <>
-                <Row label="Population (ZCTA estimate)" value={population.population?.toLocaleString() ?? "—"} />
-                <Row label="Source" value={`${population.data_source}${population.data_year ? ` · ${population.data_year}` : ""}`} />
-              </>
-            ) : (
-              <p className="text-sm text-ink/40">Population data unavailable.</p>
-            )}
+            {/*
+              The population lookup calls the U.S. Census API directly on a
+              cache miss — an external, sometimes-slow government API that
+              used to be awaited in the page's main data-fetching wave,
+              meaning the WHOLE page waited on it even though nothing else
+              here depends on it. Suspense lets this one panel show a brief
+              "Loading…" and fill in on its own, without holding up
+              anything else on the page.
+            */}
+            <Suspense fallback={<p className="text-sm text-ink/40">Loading population data…</p>}>
+              <PopulationInfo zip={l.zip} />
+            </Suspense>
             <form action={generateLocationInsightWithId} className="mt-2">
               <button
                 type="submit"
@@ -767,40 +533,16 @@ export default async function LeadDetailPage({
           </Panel>
 
           <Panel title="Buyer Matches">
-            <p className="mb-2 text-xs text-ink/40">
-              Suggestions only — nothing here contacts a buyer or assigns a deal automatically.
-            </p>
-            {buyerMatches.length === 0 && <p className="text-sm text-ink/40">No active buyers match yet.</p>}
-            <ul className="flex flex-col gap-3">
-              {buyerMatches.map((m) => (
-                <li key={m.buyer.id} className="rounded-lg border border-ink/10 p-3">
-                  <div className="flex items-center justify-between">
-                    <Link href={`/admin/buyers/${m.buyer.id}`} className="font-medium text-gold-dark hover:underline">
-                      {m.buyer.full_name}
-                    </Link>
-                    <span
-                      className={
-                        "rounded-full px-2 py-0.5 text-xs font-semibold " +
-                        (matchTier(m.score) === "Strong"
-                          ? "bg-emerald-100 text-emerald-700"
-                          : matchTier(m.score) === "Possible"
-                          ? "bg-amber-100 text-amber-700"
-                          : "bg-ink/10 text-ink/50")
-                      }
-                    >
-                      {matchTier(m.score)} · {m.score}
-                    </span>
-                  </div>
-                  <ul className="mt-2 flex flex-col gap-0.5 text-xs">
-                    {m.reasons.map((r, i) => (
-                      <li key={i} className={r.matched ? "text-emerald-700" : "text-ink/35 line-through"}>
-                        {r.matched ? "✓" : "–"} {r.label}
-                      </li>
-                    ))}
-                  </ul>
-                </li>
-              ))}
-            </ul>
+            {/*
+              Buyer matching needs three of its own queries (active buyers,
+              their ZIP coverage, their investment criteria) plus the
+              matching computation itself — none of which anything else on
+              this page depends on. Streaming it in separately means the
+              rest of the page doesn't wait on it.
+            */}
+            <Suspense fallback={<p className="text-sm text-ink/40">Finding matching buyers…</p>}>
+              <BuyerMatchesPanel lead={l} />
+            </Suspense>
           </Panel>
 
           <Panel title="Photos & Videos">
@@ -1018,69 +760,438 @@ export default async function LeadDetailPage({
 
           {/* No crm-water-hover here either, same reasoning as the Underwriting card above. */}
           <div id="activity" className="scroll-mt-24 rounded-xl bg-white p-5 shadow-sm">
-            <CollapsiblePanel
-              title="Activity"
-              subtitle="Calls, texts, notes, and system history for this lead."
-              anchorId="activity"
-              summary={
-                <div className="flex flex-col gap-2 text-sm">
-                  {activity && activity.length > 0 ? (
-                    <>
-                      <p className="text-ink">{activity[0].action}</p>
-                      <p className="text-xs text-ink/40">
-                        {activity[0].actor_type === "ai" ? "AI" : "Team"} · {formatDate(activity[0].created_at)}
-                      </p>
-                      {activity.length > 1 && (
-                        <p className="mt-1 text-[11px] text-ink/35">
-                          +{activity.length - 1} more entr{activity.length - 1 === 1 ? "y" : "ies"} — click to see full history and add a note.
-                        </p>
-                      )}
-                    </>
-                  ) : (
-                    <p className="text-sm text-ink/40">No activity logged yet — click to add one.</p>
-                  )}
+            {/*
+              The activity log is its own query, used nowhere else on this
+              page — streaming it in separately (instead of the old single
+              blocking wave) means a lead with a long history doesn't slow
+              down anything else.
+            */}
+            <Suspense
+              fallback={
+                <div>
+                  <h2 className="font-display text-lg font-semibold text-ink">Activity</h2>
+                  <p className="mt-1 text-xs text-ink/40">Calls, texts, notes, and system history for this lead.</p>
+                  <p className="mt-3 text-sm text-ink/40">Loading activity…</p>
                 </div>
               }
             >
-              <form
-                action={async (formData: FormData) => {
-                  "use server";
-                  const note = String(formData.get("note") ?? "").trim();
-                  if (note) await logActivity(params.id, null, note);
-                }}
-                className="mt-3 flex flex-col gap-2"
-              >
-                <input
-                  name="note"
-                  type="text"
-                  placeholder="Log a call, text, or note…"
-                  className="focus-gold w-full rounded-lg border border-ink/15 px-3 py-2 text-sm"
-                />
-                <button
-                  type="submit"
-                  className="focus-gold self-start rounded-full border border-gold px-4 py-1.5 text-xs font-semibold text-gold-dark hover:bg-gold hover:text-ink"
-                >
-                  Add to Activity Log
-                </button>
-              </form>
-              <ul className="mt-3 flex flex-col gap-3">
-                {(activity ?? []).map((entry) => (
-                  <li key={entry.id} className="border-b border-ink/5 pb-2 text-sm last:border-0">
-                    <p className="text-ink">{entry.action}</p>
-                    <p className="text-xs text-ink/40">
-                      {entry.actor_type === "ai" ? "AI" : "Team"} · {formatDate(entry.created_at)}
-                    </p>
-                  </li>
-                ))}
-                {(!activity || activity.length === 0) && (
-                  <li className="text-sm text-ink/40">No activity logged yet.</li>
-                )}
-              </ul>
-            </CollapsiblePanel>
+              <ActivityLogSection leadId={params.id} />
+            </Suspense>
           </div>
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * Comps + repair estimate breakdown, split out of the page's main
+ * data-fetching wave — see the comment there. This is everything inside the
+ * Underwriting panel that depends on lead_comps/repair_items; the ARV/MAO/
+ * equity summary above it only reads plain columns already on the lead row,
+ * so it doesn't need to wait on this component at all.
+ */
+async function UnderwritingDetails({ leadId, errorParam }: { leadId: string; errorParam?: string }) {
+  const supabase = createServerSupabaseClient();
+  const [{ data: repairItemRows }, { data: compRows }] = await Promise.all([
+    supabase.from("repair_items").select("*").eq("seller_submission_id", leadId),
+    supabase
+      .from("lead_comps")
+      .select("*")
+      .eq("seller_submission_id", leadId)
+      .order("sale_date", { ascending: false, nullsFirst: false }),
+  ]);
+
+  const repairCostByCategory = new Map<string, number>();
+  for (const r of (repairItemRows as RepairItem[]) ?? []) {
+    repairCostByCategory.set(r.category, r.cost);
+  }
+  const customRepairCategories = [...repairCostByCategory.keys()].filter(
+    (c) => !(REPAIR_CATEGORIES as readonly string[]).includes(c)
+  );
+  const updateRepairItemsWithId = updateRepairItems.bind(null, leadId);
+  const estimateRepairsWithAIWithId = estimateRepairsWithAIAction.bind(null, leadId);
+
+  const comps = (compRows as LeadComp[]) ?? [];
+  const compPrices = comps.map((c) => c.sale_price).filter((p): p is number => typeof p === "number");
+  const avgCompPrice = compPrices.length ? compPrices.reduce((s, p) => s + p, 0) / compPrices.length : 0;
+  const sortedPrices = [...compPrices].sort((a, b) => a - b);
+  const medianCompPrice = sortedPrices.length
+    ? sortedPrices.length % 2 === 1
+      ? sortedPrices[(sortedPrices.length - 1) / 2]
+      : (sortedPrices[sortedPrices.length / 2 - 1] + sortedPrices[sortedPrices.length / 2]) / 2
+    : 0;
+  const pricesPerSqft = comps
+    .filter((c) => c.sale_price && c.square_feet)
+    .map((c) => (c.sale_price as number) / (c.square_feet as number));
+  const avgPricePerSqft = pricesPerSqft.length ? pricesPerSqft.reduce((s, p) => s + p, 0) / pricesPerSqft.length : 0;
+
+  return (
+    <>
+      <div className="mt-5 border-t border-ink/10 pt-4">
+        <h3 className="text-sm font-semibold text-ink">Comparable Sales</h3>
+        {comps.length > 0 ? (
+          <>
+            <div className="mt-3 overflow-x-auto">
+              <table className="w-full min-w-[640px] text-left text-xs">
+                <thead>
+                  <tr className="text-ink/40">
+                    <th className="pb-1.5 pr-3 font-semibold">Address</th>
+                    <th className="pb-1.5 pr-3 font-semibold">Sale Price</th>
+                    <th className="pb-1.5 pr-3 font-semibold">Sale Date</th>
+                    <th className="pb-1.5 pr-3 font-semibold">Bd/Ba</th>
+                    <th className="pb-1.5 pr-3 font-semibold">Sq Ft</th>
+                    <th className="pb-1.5 pr-3 font-semibold">Dist.</th>
+                    <th className="pb-1.5 pr-3 font-semibold">Rating</th>
+                    <th className="pb-1.5"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {comps.map((c) => (
+                    <tr key={c.id} className="border-t border-ink/5">
+                      <td className="py-1.5 pr-3 text-ink">{c.address}</td>
+                      <td className="py-1.5 pr-3 font-semibold text-ink">{c.sale_price ? `$${c.sale_price.toLocaleString()}` : "—"}</td>
+                      <td className="py-1.5 pr-3 text-ink/60">
+                        {c.sale_date ? (
+                          <>
+                            {formatDateOnly(c.sale_date)}
+                            <span className="block text-[10px] text-ink/35">{formatRelativeTime(c.sale_date)}</span>
+                          </>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                      <td className="py-1.5 pr-3 text-ink/60">{c.bedrooms ?? "—"}/{c.bathrooms ?? "—"}</td>
+                      <td className="py-1.5 pr-3 text-ink/60">{c.square_feet?.toLocaleString() ?? "—"}</td>
+                      <td className="py-1.5 pr-3 text-ink/60">{c.distance_miles ? `${c.distance_miles} mi` : "—"}</td>
+                      <td className="py-1.5 pr-3">
+                        {c.comp_rating && (
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
+                              c.comp_rating === "Strong" ? "bg-emerald-100 text-emerald-700" : c.comp_rating === "Fair" ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"
+                            }`}
+                          >
+                            {c.comp_rating}
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-1.5 text-right">
+                        <form action={deleteComp.bind(null, leadId, c.id)}>
+                          <button type="submit" className="focus-gold text-[11px] font-semibold text-red-400 hover:text-red-600">
+                            Remove
+                          </button>
+                        </form>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-2 text-[11px] text-ink/40">
+              Avg sale price: <strong className="text-ink/60">${Math.round(avgCompPrice).toLocaleString()}</strong> · Median: <strong className="text-ink/60">${Math.round(medianCompPrice).toLocaleString()}</strong>
+              {avgPricePerSqft ? (
+                <>
+                  {" "}
+                  · Avg $/sq ft: <strong className="text-ink/60">${avgPricePerSqft.toFixed(0)}</strong>
+                </>
+              ) : null}
+            </p>
+          </>
+        ) : (
+          <p className="mt-2 text-xs text-ink/40">No comps added yet.</p>
+        )}
+
+        <form action={addComp.bind(null, leadId)} className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <input name="address" placeholder="Comp address *" required className="focus-gold col-span-2 rounded-lg border border-ink/15 px-2.5 py-1.5 text-xs sm:col-span-1" />
+          <input name="sale_price" type="number" placeholder="Sale price" className="focus-gold rounded-lg border border-ink/15 px-2.5 py-1.5 text-xs" />
+          <input name="sale_date" type="date" className="focus-gold rounded-lg border border-ink/15 px-2.5 py-1.5 text-xs" />
+          <input name="bedrooms" type="number" placeholder="Beds" className="focus-gold rounded-lg border border-ink/15 px-2.5 py-1.5 text-xs" />
+          <input name="bathrooms" type="number" step="0.5" placeholder="Baths" className="focus-gold rounded-lg border border-ink/15 px-2.5 py-1.5 text-xs" />
+          <input name="square_feet" type="number" placeholder="Sq ft" className="focus-gold rounded-lg border border-ink/15 px-2.5 py-1.5 text-xs" />
+          <input name="lot_size" placeholder="Lot size" className="focus-gold rounded-lg border border-ink/15 px-2.5 py-1.5 text-xs" />
+          <input name="distance_miles" type="number" step="0.1" placeholder="Distance (mi)" className="focus-gold rounded-lg border border-ink/15 px-2.5 py-1.5 text-xs" />
+          <select name="comp_rating" defaultValue="" className="focus-gold rounded-lg border border-ink/15 px-2.5 py-1.5 text-xs">
+            <option value="">Rating —</option>
+            <option value="Strong">Strong</option>
+            <option value="Fair">Fair</option>
+            <option value="Weak">Weak</option>
+          </select>
+          <input name="condition" placeholder="Condition" className="focus-gold rounded-lg border border-ink/15 px-2.5 py-1.5 text-xs" />
+          <input name="notes" placeholder="Notes" className="focus-gold col-span-2 rounded-lg border border-ink/15 px-2.5 py-1.5 text-xs sm:col-span-2" />
+          <button type="submit" className="focus-gold col-span-2 rounded-full bg-forest px-4 py-1.5 text-xs font-semibold text-white hover:bg-forest/90 sm:col-span-1">
+            + Add Comp
+          </button>
+        </form>
+        <p className="mt-2 text-[11px] text-ink/35">
+          Manual comps only — no live comparable-sales data source is connected. Wire up a property-data API later and imported comps will show separately from these.
+        </p>
+      </div>
+
+      <div className="mt-5 border-t border-ink/10 pt-4">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <h3 className="text-sm font-semibold text-ink">Repair Estimate Breakdown</h3>
+            <p className="mt-1 text-xs text-ink/40">
+              Enter a cost per category — the total replaces &quot;Repair Estimate ($)&quot; above automatically.
+            </p>
+          </div>
+          <form action={estimateRepairsWithAIWithId} className="w-full shrink-0 sm:w-auto">
+            <details className="group">
+              <summary className="focus-gold cursor-pointer list-none rounded-full border border-violet-300 bg-violet-50 px-4 py-1.5 text-center text-xs font-semibold text-violet-700 hover:bg-violet-100">
+                ✨ Estimate with AI
+              </summary>
+              <div className="mt-2 w-full rounded-lg border border-violet-200 bg-violet-50/60 p-4 sm:w-[440px]">
+                <p className="text-xs font-medium text-violet-700">
+                  Check which repairs actually apply — AI will estimate only these, leaving every other category untouched:
+                </p>
+                <div className="mt-3 grid max-h-80 grid-cols-1 gap-2 overflow-y-auto sm:grid-cols-2">
+                  {[...REPAIR_CATEGORIES, ...customRepairCategories].map((category) => (
+                    <label
+                      key={category}
+                      className="flex cursor-pointer items-center gap-3 rounded-lg border border-violet-200 bg-white px-3 py-3 text-sm font-medium text-ink/80 transition-colors has-[:checked]:border-violet-500 has-[:checked]:bg-violet-100"
+                    >
+                      <input
+                        type="checkbox"
+                        name="ai_categories"
+                        value={category}
+                        className="focus-gold h-6 w-6 shrink-0 rounded border-2 border-violet-300 text-violet-600"
+                      />
+                      {category}
+                    </label>
+                  ))}
+                </div>
+                <SubmitButton
+                  pendingLabel="Estimating…"
+                  className="focus-gold mt-3 w-full rounded-full bg-violet-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-violet-700 disabled:opacity-70"
+                >
+                  Estimate Selected →
+                </SubmitButton>
+              </div>
+            </details>
+          </form>
+        </div>
+        <p className="mt-2 rounded-lg bg-violet-50 px-3 py-2 text-[11px] text-violet-700">
+          AI-generated estimate — always verify against real comps and contractor quotes before making an offer.
+        </p>
+        {errorParam && (
+          <p className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-700" role="alert">
+            {errorParam}
+          </p>
+        )}
+        <form action={updateRepairItemsWithId} className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {REPAIR_CATEGORIES.map((category) => (
+            <div key={category}>
+              <label htmlFor={`repair_${category}`} className="text-xs font-medium text-ink/60">
+                {category}
+              </label>
+              <input
+                id={`repair_${category}`}
+                name={`repair_${category}`}
+                type="number"
+                step="100"
+                min="0"
+                defaultValue={repairCostByCategory.get(category) ?? ""}
+                placeholder="0"
+                className="focus-gold mt-1 w-full rounded-lg border border-ink/15 px-3 py-1.5 text-sm"
+              />
+            </div>
+          ))}
+          {customRepairCategories.map((category) => (
+            <div key={category}>
+              <label htmlFor={`repair_${category}`} className="text-xs font-medium text-ink/60">
+                {category} <span className="text-ink/30">(custom)</span>
+              </label>
+              <input
+                id={`repair_${category}`}
+                name={`repair_${category}`}
+                type="number"
+                step="100"
+                min="0"
+                defaultValue={repairCostByCategory.get(category) ?? ""}
+                placeholder="0"
+                className="focus-gold mt-1 w-full rounded-lg border border-ink/15 px-3 py-1.5 text-sm"
+              />
+            </div>
+          ))}
+          <div className="col-span-2 rounded-lg border border-dashed border-ink/15 p-2 sm:col-span-3">
+            <p className="text-xs font-medium text-ink/60">+ Add Repair Item</p>
+            <div className="mt-1.5 grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <input name="repair_new_name" placeholder="Category name" className="focus-gold rounded-lg border border-ink/15 px-3 py-1.5 text-sm sm:col-span-2" />
+              <input name="repair_new_cost" type="number" step="100" min="0" placeholder="Cost" className="focus-gold rounded-lg border border-ink/15 px-3 py-1.5 text-sm" />
+              <input name="repair_new_notes" placeholder="Notes (optional)" className="focus-gold rounded-lg border border-ink/15 px-3 py-1.5 text-sm" />
+            </div>
+          </div>
+          <SaveAndCollapseButton className="focus-gold col-span-2 mt-1 self-end rounded-full bg-forest px-5 py-2 text-xs font-semibold text-white hover:bg-forest/90 sm:col-span-3">
+            Save Repair Breakdown
+          </SaveAndCollapseButton>
+        </form>
+      </div>
+    </>
+  );
+}
+
+/**
+ * Population lookup, split out of the page's main data-fetching wave (see
+ * the comment above that wave) so an external, occasionally slow Census API
+ * call can never hold up the rest of the lead page.
+ */
+async function PopulationInfo({ zip }: { zip: string | null }) {
+  const population = zip ? await getPopulationForZip(zip) : null;
+  return population && !population.lookup_failed ? (
+    <>
+      <Row label="Population (ZCTA estimate)" value={population.population?.toLocaleString() ?? "—"} />
+      <Row label="Source" value={`${population.data_source}${population.data_year ? ` · ${population.data_year}` : ""}`} />
+    </>
+  ) : (
+    <p className="text-sm text-ink/40">Population data unavailable.</p>
+  );
+}
+
+/**
+ * Buyer matching, split out of the page's main data-fetching wave — see the
+ * comment there. Fetches its own three queries (active buyers, their ZIP
+ * coverage, their investment criteria) and runs the same matching logic
+ * that used to run inline in the page body.
+ */
+async function BuyerMatchesPanel({ lead }: { lead: SellerSubmission }) {
+  const supabase = createServerSupabaseClient();
+  const { data: activeBuyers } = await supabase.from("cash_buyers").select("*").eq("status", "Active");
+  const buyerIds = (activeBuyers ?? []).map((b) => b.id);
+
+  const [{ data: allZips }, { data: allCriteria }] = await Promise.all([
+    buyerIds.length
+      ? supabase.from("buyer_zip_codes").select("*").in("buyer_id", buyerIds)
+      : Promise.resolve({ data: [] as BuyerZipCode[] }),
+    buyerIds.length
+      ? supabase.from("buyer_investment_criteria").select("*").in("buyer_id", buyerIds)
+      : Promise.resolve({ data: [] as BuyerInvestmentCriteria[] }),
+  ]);
+
+  const zipsByBuyer = new Map<string, BuyerZipCode[]>();
+  for (const z of (allZips as BuyerZipCode[]) ?? []) {
+    zipsByBuyer.set(z.buyer_id, [...(zipsByBuyer.get(z.buyer_id) ?? []), z]);
+  }
+  const criteriaByBuyer = new Map<string, BuyerInvestmentCriteria[]>();
+  for (const c of (allCriteria as BuyerInvestmentCriteria[]) ?? []) {
+    criteriaByBuyer.set(c.buyer_id, [...(criteriaByBuyer.get(c.buyer_id) ?? []), c]);
+  }
+
+  const buyerMatches = matchBuyersForLead(lead, (activeBuyers as CashBuyer[]) ?? [], zipsByBuyer, criteriaByBuyer);
+
+  return (
+    <>
+      <p className="mb-2 text-xs text-ink/40">
+        Suggestions only — nothing here contacts a buyer or assigns a deal automatically.
+      </p>
+      {buyerMatches.length === 0 && <p className="text-sm text-ink/40">No active buyers match yet.</p>}
+      <ul className="flex flex-col gap-3">
+        {buyerMatches.map((m) => (
+          <li key={m.buyer.id} className="rounded-lg border border-ink/10 p-3">
+            <div className="flex items-center justify-between">
+              <Link href={`/admin/buyers/${m.buyer.id}`} className="font-medium text-gold-dark hover:underline">
+                {m.buyer.full_name}
+              </Link>
+              <span
+                className={
+                  "rounded-full px-2 py-0.5 text-xs font-semibold " +
+                  (matchTier(m.score) === "Strong"
+                    ? "bg-emerald-100 text-emerald-700"
+                    : matchTier(m.score) === "Possible"
+                    ? "bg-amber-100 text-amber-700"
+                    : "bg-ink/10 text-ink/50")
+                }
+              >
+                {matchTier(m.score)} · {m.score}
+              </span>
+            </div>
+            <ul className="mt-2 flex flex-col gap-0.5 text-xs">
+              {m.reasons.map((r, i) => (
+                <li key={i} className={r.matched ? "text-emerald-700" : "text-ink/35 line-through"}>
+                  {r.matched ? "✓" : "–"} {r.label}
+                </li>
+              ))}
+            </ul>
+          </li>
+        ))}
+      </ul>
+    </>
+  );
+}
+
+/**
+ * Activity log, split out of the page's main data-fetching wave — see the
+ * comment there. Same CollapsiblePanel, summary, add-note form, and full
+ * history list as before; only where the `activity_log` query happens has
+ * moved.
+ */
+async function ActivityLogSection({ leadId }: { leadId: string }) {
+  const supabase = createServerSupabaseClient();
+  const { data: activity } = await supabase
+    .from("activity_log")
+    .select("*")
+    .eq("seller_submission_id", leadId)
+    .order("created_at", { ascending: false });
+
+  return (
+    <CollapsiblePanel
+      title="Activity"
+      subtitle="Calls, texts, notes, and system history for this lead."
+      anchorId="activity"
+      summary={
+        <div className="flex flex-col gap-2 text-sm">
+          {activity && activity.length > 0 ? (
+            <>
+              <p className="text-ink">{activity[0].action}</p>
+              <p className="text-xs text-ink/40">
+                {activity[0].actor_type === "ai" ? "AI" : "Team"} · {formatDate(activity[0].created_at)}
+              </p>
+              {activity.length > 1 && (
+                <p className="mt-1 text-[11px] text-ink/35">
+                  +{activity.length - 1} more entr{activity.length - 1 === 1 ? "y" : "ies"} — click to see full history and add a note.
+                </p>
+              )}
+            </>
+          ) : (
+            <p className="text-sm text-ink/40">No activity logged yet — click to add one.</p>
+          )}
+        </div>
+      }
+    >
+      <form
+        action={async (formData: FormData) => {
+          "use server";
+          const note = String(formData.get("note") ?? "").trim();
+          if (note) await logActivity(leadId, null, note);
+        }}
+        className="mt-3 flex flex-col gap-2"
+      >
+        <input
+          name="note"
+          type="text"
+          placeholder="Log a call, text, or note…"
+          className="focus-gold w-full rounded-lg border border-ink/15 px-3 py-2 text-sm"
+        />
+        <button
+          type="submit"
+          className="focus-gold self-start rounded-full border border-gold px-4 py-1.5 text-xs font-semibold text-gold-dark hover:bg-gold hover:text-ink"
+        >
+          Add to Activity Log
+        </button>
+      </form>
+      <ul className="mt-3 flex flex-col gap-3">
+        {(activity ?? []).map((entry) => (
+          <li key={entry.id} className="border-b border-ink/5 pb-2 text-sm last:border-0">
+            <p className="text-ink">{entry.action}</p>
+            <p className="text-xs text-ink/40">
+              {entry.actor_type === "ai" ? "AI" : "Team"} · {formatDate(entry.created_at)}
+            </p>
+          </li>
+        ))}
+        {(!activity || activity.length === 0) && (
+          <li className="text-sm text-ink/40">No activity logged yet.</li>
+        )}
+      </ul>
+    </CollapsiblePanel>
   );
 }
 
