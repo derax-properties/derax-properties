@@ -81,14 +81,24 @@ export async function generateLocationInsight(sellerSubmissionId: string, zip: s
 }
 
 /**
- * Saves the lead-level underwriting inputs (ARV, repairs, comps note, and
- * a manually-judged recommended offer). The Maximum Allowable Offer itself
- * is never stored — it's derived from these numbers via calculateMAO() at
+ * Saves the lead-level underwriting inputs (ARV, comps note, and a
+ * manually-judged recommended offer). The Maximum Allowable Offer itself is
+ * never stored — it's derived from these numbers via calculateMAO() at
  * render time, so it can never drift out of sync with what's saved here.
+ *
+ * Deliberately does NOT touch repair_estimate. That column has exactly one
+ * writer now: updateRepairItems (the itemized breakdown below it on the
+ * page), which always re-totals from every stored repair_items row. This
+ * form used to also write repair_estimate from its own plain number field,
+ * and that's what caused the itemized total to randomly "revert to what it
+ * was when the page loaded" — this field's on-screen value goes stale the
+ * moment the breakdown recalculates it (an uncontrolled input's displayed
+ * value doesn't refresh without a full reload), so saving this form later
+ * silently wrote that stale number straight back over the fresh total.
+ * With only one writer, that can't happen anymore.
  */
 export async function updateUnderwriting(id: string, formData: FormData) {
   const arv = formData.get("arv_estimate");
-  const repairs = formData.get("repair_estimate");
   const multiplier = formData.get("mao_multiplier");
   const recommended = formData.get("recommended_offer");
   const compsNote = formData.get("comps_note");
@@ -106,7 +116,6 @@ export async function updateUnderwriting(id: string, formData: FormData) {
     .from("seller_submissions")
     .update({
       arv_estimate: toNumberOrNull(arv),
-      repair_estimate: toNumberOrNull(repairs),
       mao_multiplier: toNumberOrNull(multiplier) ?? 0.7,
       recommended_offer: toNumberOrNull(recommended),
       comps_note: typeof compsNote === "string" ? compsNote.trim() || null : null,

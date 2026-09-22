@@ -371,15 +371,32 @@ export default async function LeadDetailPage({
               />
             </div>
             <div>
-              <label htmlFor="repair_estimate" className="text-xs font-medium text-ink/60">Repair Estimate ($)</label>
+              <label htmlFor="repair_estimate_display" className="text-xs font-medium text-ink/60">Repair Estimate ($)</label>
+              {/*
+                Read-only on purpose — no `name`, so it's never part of this
+                form's submission. This used to be a plain editable number
+                that also wrote to the same repair_estimate column the
+                itemized breakdown below computes. That's exactly what made
+                totals randomly "revert to what I had when I opened the
+                file": edit the breakdown, save it (new total written) — but
+                this field's value on screen was set from the page load
+                before that edit, and never refreshes without a full
+                reload (defaultValue only applies once, at mount). Later
+                saving THIS form (say, just to update ARV) would silently
+                write that stale number straight back over the fresh total.
+                Making it read-only removes the second, conflicting way to
+                set this number — the itemized breakdown below is now the
+                only thing that can ever change it, so it can't drift.
+              */}
               <input
-                id="repair_estimate"
-                name="repair_estimate"
+                id="repair_estimate_display"
                 type="number"
-                step="500"
-                defaultValue={l.repair_estimate ?? ""}
-                className="focus-gold mt-1 w-full rounded-lg border border-ink/15 px-3 py-1.5 text-sm"
+                value={l.repair_estimate ?? ""}
+                readOnly
+                disabled
+                className="mt-1 w-full cursor-not-allowed rounded-lg border border-ink/15 bg-ink/5 px-3 py-1.5 text-sm text-ink/60"
               />
+              <p className="mt-1 text-[11px] text-ink/35">Auto-calculated from the Repair Estimate Breakdown below.</p>
             </div>
             <div>
               <label htmlFor="mao_multiplier" className="text-xs font-medium text-ink/60">MAO Multiplier</label>
