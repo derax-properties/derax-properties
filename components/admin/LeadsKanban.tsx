@@ -68,6 +68,23 @@ const STAGE_ACCENT: Record<PipelineStage, string> = {
   "Dead / Lost": "bg-red-400",
 };
 
+// Same per-stage hue as STAGE_ACCENT, but as a text color for the column
+// title itself — so each column is identifiable by its title color at a
+// glance, not just by the small dot next to it. Only the title text is
+// colored; the column card itself stays plain white so nothing else about
+// the board's look changes.
+const STAGE_TITLE_COLOR: Record<PipelineStage, string> = {
+  "Pre-Qualified": "text-sky-600",
+  Contacted: "text-violet-600",
+  Qualified: "text-emerald-600",
+  "Offer Made": "text-amber-600",
+  Negotiating: "text-orange-600",
+  "Under Contract": "text-indigo-600",
+  Disposition: "text-teal-600",
+  Closed: "text-ink/50",
+  "Dead / Lost": "text-red-500",
+};
+
 function motivationDot(level: SellerSubmission["motivation_level"]) {
   if (level === "Hot") return "bg-red-500";
   if (level === "Warm") return "bg-amber-500";
@@ -244,7 +261,7 @@ export function LeadsKanban({
         >
           <div className="mb-2 flex items-center gap-2 px-1">
             <span className={`h-2 w-2 rounded-full ${STAGE_ACCENT[col.stage]}`} />
-            <span className="text-xs font-bold uppercase tracking-wide text-ink/60">{col.stage}</span>
+            <span className={`text-xs font-bold uppercase tracking-wide ${STAGE_TITLE_COLOR[col.stage]}`}>{col.stage}</span>
             <span className="ml-auto rounded-full bg-ink/5 px-2 py-0.5 text-[11px] font-semibold text-ink/50">
               {col.items.length}
             </span>

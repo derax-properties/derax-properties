@@ -63,35 +63,37 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <div className="crm-shell" data-crm-theme="sage" data-crm-mode="light">
       <div className="crm-canvas min-h-screen font-body text-ink">
         <div className="flex min-h-screen flex-col lg:flex-row">
-          <aside className="crm-sidebar flex flex-col justify-between px-4 py-6 text-cream lg:w-56 lg:shrink-0">
+          <aside className="crm-sidebar flex flex-col justify-between gap-6 px-4 py-6 text-cream lg:w-56 lg:shrink-0">
             <div>
-              <Link href="/admin" className="flex flex-col leading-none">
+              <Link href="/admin" className="crm-float-chip flex flex-col leading-none rounded-xl px-3 py-2.5">
                 <span className="font-display text-lg font-bold">DERAX</span>
                 <span className="text-[9px] font-semibold tracking-[0.35em] text-gold">CRM</span>
               </Link>
-              <nav className="mt-8 flex flex-row gap-1 overflow-x-auto lg:flex-col lg:overflow-visible">
+              <nav className="mt-4 flex flex-row gap-2 overflow-x-auto lg:flex-col lg:overflow-visible">
                 {links.map((link) => (
                   <Link
                     key={link.href}
                     href={link.href}
-                    className="focus-gold whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium text-cream/80 hover:bg-white/5 hover:text-gold"
+                    className="crm-float-chip focus-gold whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium text-cream/80 hover:text-gold"
                   >
                     {link.label}
                   </Link>
                 ))}
               </nav>
             </div>
-            <div className="mt-8 border-t border-white/10 pt-4">
-              <p className="truncate text-xs text-cream/50">{user?.email}</p>
-              {profile && (
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-gold/70">
-                  {profile.role === "owner" ? "Owner" : "Admin"}
-                </p>
-              )}
+            <div className="flex flex-col gap-2">
+              <div className="crm-float-chip rounded-xl px-3 py-2.5">
+                <p className="truncate text-xs text-cream/50">{user?.email}</p>
+                {profile && (
+                  <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide text-gold/70">
+                    {profile.role === "owner" ? "Owner" : "Admin"}
+                  </p>
+                )}
+              </div>
               <form action={signOut}>
                 <button
                   type="submit"
-                  className="focus-gold mt-2 text-sm font-semibold text-gold hover:text-gold-light"
+                  className="crm-float-chip focus-gold w-full rounded-lg px-3 py-2 text-sm font-semibold text-gold hover:text-gold-light"
                 >
                   Sign Out
                 </button>

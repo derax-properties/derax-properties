@@ -53,11 +53,33 @@ body {
   background-image: linear-gradient(135deg, rgba(201, 162, 75, 0.12) 0%, transparent 40%),
     linear-gradient(155deg, rgba(23, 58, 46, 0.55) 0%, transparent 55%),
     linear-gradient(200deg, rgba(0, 0, 0, 0.35) 0%, transparent 70%);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
   border-right: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 6px 0 30px rgba(0, 0, 0, 0.18);
+  /* Inset highlights along the top/left edge read as light catching the
+     rim of a pane of glass; the two outer shadows are pushed well past the
+     sidebar's own border so it reads as floating above (not flush with)
+     the canvas behind it. */
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), inset -1px 0 0 rgba(255, 255, 255, 0.05),
+    14px 0 36px -10px rgba(0, 0, 0, 0.5), 34px 0 80px -24px rgba(0, 0, 0, 0.35);
   position: relative;
+  isolation: isolate;
+  /* A slight standing tilt plus a slow vertical drift is what sells
+     "floating" rather than just "blurred" — subtle enough not to make
+     text hard to read, covered by the prefers-reduced-motion rule above. */
+  transform: perspective(1600px) rotateY(-1deg);
+  transform-origin: left center;
+  animation: crm-sidebar-float 7s ease-in-out infinite;
+}
+
+@keyframes crm-sidebar-float {
+  0%,
+  100% {
+    transform: perspective(1600px) rotateY(-1deg) translateY(0);
+  }
+  50% {
+    transform: perspective(1600px) rotateY(-1deg) translateY(-6px);
+  }
 }
 
 .crm-sidebar::before {
@@ -67,6 +89,60 @@ body {
   width: 2px;
   background: linear-gradient(180deg, rgba(201, 162, 75, 0.6), rgba(201, 162, 75, 0));
   pointer-events: none;
+}
+
+/* A diagonal glass sheen sweeping across the pane — the "mirror" part of
+   the floating-mirror sidebar. Static (not animated) so it doesn't compete
+   with the float above, but the wide soft band gives the same "light
+   glancing off glass" read as the top of the sidebar catches lighter than
+   the bottom. */
+.crm-sidebar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    115deg,
+    rgba(255, 255, 255, 0.14) 0%,
+    rgba(255, 255, 255, 0.04) 18%,
+    transparent 32%,
+    transparent 68%,
+    rgba(255, 255, 255, 0.06) 82%,
+    rgba(255, 255, 255, 0.16) 100%
+  );
+  pointer-events: none;
+  mix-blend-mode: overlay;
+}
+
+/*
+ * Each piece of writing in the sidebar (the brand mark, every nav link,
+ * the account block, sign out) sits in its own small glass chip with its
+ * own shadow beneath it — rather than the sidebar being one flat panel of
+ * text, each label reads as a separate object floating just above the
+ * mirror surface. Hover lifts a nav chip a little further off the glass.
+ */
+.crm-float-chip {
+  position: relative;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02));
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.18) inset, 0 10px 20px -12px rgba(0, 0, 0, 0.6),
+    0 2px 6px rgba(0, 0, 0, 0.35);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
+  transform: translateZ(0);
+  transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 220ms ease, background 220ms ease,
+    color 220ms ease;
+}
+
+a.crm-float-chip:hover,
+button.crm-float-chip:hover {
+  transform: translateY(-3px);
+  background: linear-gradient(160deg, rgba(201, 162, 75, 0.22), rgba(255, 255, 255, 0.03));
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.25) inset, 0 18px 30px -14px rgba(0, 0, 0, 0.65),
+    0 4px 10px rgba(0, 0, 0, 0.4);
+}
+
+a.crm-float-chip:active,
+button.crm-float-chip:active {
+  transform: translateY(-1px);
 }
 
 .crm-canvas {
