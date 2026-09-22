@@ -243,9 +243,15 @@ export async function estimateRepairsWithAIAction(id: string, formData: FormData
   });
 
   if (!result) {
+    // Deliberately doesn't guess a specific cause here (missing key, bad
+    // model name, rate limit, network error, etc. all land here) — the
+    // real reason is always in the server logs (see the
+    // "[aiRepairEstimate]" lines estimateRepairsWithAI logs before
+    // returning null), so the on-screen message stays generic rather than
+    // pointing at one cause that might be wrong.
     redirect(
       `/admin/leads/${id}?error=${encodeURIComponent(
-        "AI repair estimate is not available right now — check ANTHROPIC_API_KEY is configured, or fill in the breakdown manually."
+        "AI repair estimate isn't available right now — you can try again in a moment, or just fill in the breakdown manually below."
       )}#underwriting`
     );
   }

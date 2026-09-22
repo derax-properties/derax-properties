@@ -1,8 +1,13 @@
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-// "-latest" aliases track the current recommended model for that family, so
-// this stays valid as Anthropic ships newer models without a code change.
-// Override with ANTHROPIC_MODEL if you want a specific pinned model instead.
-const MODEL = process.env.ANTHROPIC_MODEL || "claude-3-5-haiku-latest";
+// Family-level aliases (no date suffix) track the current recommended
+// snapshot for that model family, updated by Anthropic within about a week
+// of a new release — but a NEW model family (e.g. Haiku 3.5 -> Haiku 4.5)
+// gets its own alias name, so this still needs a code change whenever
+// Anthropic retires the underlying family, which is exactly what happened
+// to the previous "claude-3-5-haiku-latest" value here (it started 404ing
+// once Anthropic retired that model). Override with ANTHROPIC_MODEL if you
+// want a specific pinned dated snapshot instead of the family alias.
+const MODEL = process.env.ANTHROPIC_MODEL || "claude-haiku-4-5";
 
 export interface AiRepairEstimateResult {
   costs: Record<string, number>;
