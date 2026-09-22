@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160">
+  <!-- A quiet, repeating little-house motif for the sidebar's "real estate
+       background" — faint linework only, no fill, so it reads through the
+       purple glass as texture rather than competing with the nav text on
+       top of it. -->
+  <g fill="none" stroke="#ffffff" stroke-opacity="0.5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M20 70 L40 52 L60 70" />
+    <rect x="26" y="70" width="28" height="22" />
+    <path d="M32 92 V80 H36 V92" />
+    <path d="M100 130 L124 108 L148 130" />
+    <rect x="107" y="130" width="34" height="26" />
+    <path d="M118 156 V142 H124 V156" />
+    <rect x="130" y="112" width="6" height="10" />
+  </g>
+</svg>

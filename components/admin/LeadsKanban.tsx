@@ -264,7 +264,7 @@ export function LeadsKanban({
             if (draggingId) handleDrop(draggingId, col.stage);
             setDraggingId(null);
           }}
-          className={`min-w-[220px] overflow-hidden rounded-xl bg-white p-2 shadow-sm transition ${
+          className={`crm-water-float min-w-[220px] overflow-hidden rounded-xl bg-white p-2 shadow-sm transition ${
             dragOverStage === col.stage ? "ring-2 ring-gold ring-offset-2" : ""
           }`}
         >
@@ -301,7 +301,7 @@ export function LeadsKanban({
                     setDraggingId(null);
                     setDragOverStage(null);
                   }}
-                  className={`relative cursor-grab rounded-lg border border-ink/10 text-sm shadow-sm active:cursor-grabbing ${
+                  className={`crm-water-hover relative cursor-grab rounded-lg border border-ink/10 text-sm shadow-sm active:cursor-grabbing ${
                     isCompact ? "p-2" : "p-3"
                   } ${movingOutId === lead.id ? "crm-kanban-card-out" : ""} ${
                     justMovedId === lead.id ? "crm-kanban-card-in" : ""
@@ -364,7 +364,7 @@ export function LeadsKanban({
                   {col.stage === "Qualified" && (
                     <Link
                       href={`/admin/leads/${lead.id}#underwriting`}
-                      className={`focus-gold block w-full rounded-full border border-gold bg-gold/10 text-center text-[11px] font-bold text-gold-dark hover:bg-gold/20 ${
+                      className={`crm-water-hover focus-gold block w-full rounded-full border border-gold bg-gold/10 text-center text-[11px] font-bold text-gold-dark hover:bg-gold/20 ${
                         isCompact ? "mt-1.5 py-1" : "mt-2.5 py-1.5"
                       }`}
                     >
@@ -375,7 +375,7 @@ export function LeadsKanban({
                     <button
                       type="button"
                       onClick={() => handleAdvance(lead, nextStage)}
-                      className={`focus-gold w-full rounded-full bg-forest text-[11px] font-bold text-white hover:bg-forest/90 ${
+                      className={`crm-water-hover focus-gold w-full rounded-full bg-forest text-[11px] font-bold text-white hover:bg-forest/90 ${
                         isCompact ? "mt-1.5 py-1" : "mt-2 py-1.5"
                       }`}
                     >
@@ -386,7 +386,7 @@ export function LeadsKanban({
                     <button
                       type="button"
                       onClick={() => handleReopen(lead)}
-                      className={`focus-gold w-full rounded-full border border-ink/15 text-[11px] font-bold text-ink/60 hover:bg-ink/5 ${
+                      className={`crm-water-hover focus-gold w-full rounded-full border border-ink/15 text-[11px] font-bold text-ink/60 hover:bg-ink/5 ${
                         isCompact ? "mt-1.5 py-1" : "mt-2 py-1.5"
                       }`}
                     >

@@ -42,18 +42,22 @@ body {
  * outside these two classes changes.
  */
 /*
- * Frosted-glass sidebar, recolored to match the DERAX logo mark's own
- * green + wood-brown/gold palette (the owner asked for this exact color,
- * having found the previous near-black glass hard to read). No more black
- * layer at all now — the base is a translucent forest green with a
- * warm wood-brown undertone, same family as the gold accent already used
- * for the glass sheen.
+ * Frosted-glass sidebar, now a transparent purple with a faint little
+ * "real estate" house motif showing through the glass (crm-sidebar-pattern
+ * .svg), instead of a flat tint. Same purple hue in both modes, per the
+ * owner's request — only how much of it shows through changes:
+ * light mode sits at 60% transparent (40% opacity, easier to see the page
+ * behind it), dark mode at 40% transparent (60% opacity, reads noticeably
+ * darker/richer) — see the [data-crm-mode="dark"] override below.
  */
 .crm-sidebar {
-  background-color: rgba(24, 77, 57, 0.68);
-  background-image: linear-gradient(135deg, rgba(201, 162, 75, 0.28) 0%, transparent 45%),
-    linear-gradient(155deg, rgba(38, 107, 78, 0.65) 0%, transparent 55%),
-    linear-gradient(200deg, rgba(139, 94, 43, 0.32) 0%, transparent 65%);
+  background-color: rgba(91, 33, 182, 0.4);
+  background-image: url("/crm-sidebar-pattern.svg"),
+    linear-gradient(135deg, rgba(216, 180, 254, 0.22) 0%, transparent 45%),
+    linear-gradient(155deg, rgba(124, 58, 237, 0.35) 0%, transparent 55%),
+    linear-gradient(200deg, rgba(46, 16, 89, 0.3) 0%, transparent 65%);
+  background-size: 140px 140px, auto, auto, auto;
+  background-repeat: repeat, no-repeat, no-repeat, no-repeat;
   backdrop-filter: blur(24px) saturate(160%);
   -webkit-backdrop-filter: blur(24px) saturate(160%);
   border-right: 1px solid rgba(255, 255, 255, 0.08);
@@ -93,8 +97,22 @@ body {
   position: absolute;
   inset: 0 auto 0 0;
   width: 2px;
-  background: linear-gradient(180deg, rgba(201, 162, 75, 0.6), rgba(201, 162, 75, 0));
+  background: linear-gradient(180deg, rgba(216, 180, 254, 0.7), rgba(216, 180, 254, 0));
   pointer-events: none;
+}
+
+/* Dark mode: same purple, just less see-through (40% transparent instead
+   of 60%) and a touch deeper, so it reads as noticeably darker/richer
+   rather than merely "less see-through" — set by ThemePicker.tsx toggling
+   data-crm-mode on .crm-shell. */
+.crm-shell[data-crm-mode="dark"] .crm-sidebar {
+  background-color: rgba(91, 33, 182, 0.6);
+  background-image: url("/crm-sidebar-pattern.svg"),
+    linear-gradient(135deg, rgba(216, 180, 254, 0.14) 0%, transparent 45%),
+    linear-gradient(155deg, rgba(76, 29, 149, 0.55) 0%, transparent 55%),
+    linear-gradient(200deg, rgba(10, 5, 20, 0.55) 0%, transparent 70%);
+  background-size: 140px 140px, auto, auto, auto;
+  background-repeat: repeat, no-repeat, no-repeat, no-repeat;
 }
 
 /* A diagonal glass sheen sweeping across the pane — the "mirror" part of
@@ -215,6 +233,58 @@ button.crm-float-chip:active {
 .crm-accent-soft-bg {
   background-color: var(--crm-accent-soft);
   color: var(--crm-accent-soft-text);
+}
+
+/*
+ * "Floating on water" — the CRM-wide interaction language the owner asked
+ * for: things should feel like they're resting on water, not sitting flat
+ * on a page. Two pieces:
+ *
+ * .crm-water-float — a slow, gentle idle bob for things that should look
+ * like they're already floating without any interaction (each Kanban
+ * column). The nth-child delays below stagger several floating siblings
+ * so they don't all bob in unison, which reads as separate objects
+ * floating rather than one panel wobbling.
+ *
+ * .crm-water-hover — the "your mouse ripples it" interaction: a soft lift
+ * + tilt + shadow-deepen on hover, with a spring-y overshoot easing that
+ * settles like something bobbing after a touch. Meant to go on anything
+ * the owner points at — lead cards, lead photos, buttons — not just one
+ * component, so it's a shared utility class rather than baked into a
+ * single component's own CSS.
+ */
+.crm-water-float {
+  animation: crm-water-bob 5s ease-in-out infinite;
+}
+.crm-water-float:nth-child(2n) {
+  animation-delay: -1.6s;
+}
+.crm-water-float:nth-child(3n) {
+  animation-delay: -3.1s;
+}
+.crm-water-float:nth-child(5n) {
+  animation-delay: -2.2s;
+}
+
+@keyframes crm-water-bob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-5px) rotate(-0.35deg);
+  }
+}
+
+.crm-water-hover {
+  transition: transform 420ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 420ms ease;
+}
+.crm-water-hover:hover {
+  transform: translateY(-5px) rotate(-0.5deg) scale(1.015);
+  box-shadow: 0 20px 34px -16px rgba(12, 11, 9, 0.4);
+}
+.crm-water-hover:active {
+  transform: translateY(-1px) rotate(0deg) scale(0.99);
 }
 
 /*

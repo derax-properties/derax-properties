@@ -490,7 +490,7 @@ function LeadThumbnail({ url }: { url?: string }) {
     );
   }
   // eslint-disable-next-line @next/next/no-img-element
-  return <img src={url} alt="" className="h-10 w-10 shrink-0 rounded-lg object-cover" />;
+  return <img src={url} alt="" className="crm-water-hover h-10 w-10 shrink-0 rounded-lg object-cover" />;
 }
 
 function StatTile({ icon, value, label, tint }: { icon: React.ReactNode; value: number; label: string; tint: string }) {

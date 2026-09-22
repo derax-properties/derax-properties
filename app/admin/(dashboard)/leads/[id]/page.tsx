@@ -266,7 +266,7 @@ export default async function LeadDetailPage({
             <div className="mt-4 grid grid-cols-4 gap-2">
               {photos.slice(0, 4).map((p) =>
                 p.url ? (
-                  <a key={p.id} href={p.url} target="_blank" rel="noreferrer">
+                  <a key={p.id} href={p.url} target="_blank" rel="noreferrer" className="crm-water-hover block">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={p.url} alt="" className="aspect-square w-full rounded-lg object-cover" />
                   </a>
@@ -740,7 +740,7 @@ export default async function LeadDetailPage({
               <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
                 {photos.map((p) =>
                   p.url ? (
-                    <a key={p.id} href={p.url} target="_blank" rel="noreferrer">
+                    <a key={p.id} href={p.url} target="_blank" rel="noreferrer" className="crm-water-hover block">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={p.url} alt="" className="aspect-square w-full rounded-lg object-cover" />
                     </a>
@@ -752,7 +752,12 @@ export default async function LeadDetailPage({
               <div className={`grid grid-cols-2 gap-2 sm:grid-cols-3 ${photos.length > 0 ? "mt-3" : ""}`}>
                 {videos.map((v) =>
                   v.url ? (
-                    <video key={v.id} src={v.url} controls className="aspect-video w-full rounded-lg bg-ink/5 object-cover" />
+                    <video
+                      key={v.id}
+                      src={v.url}
+                      controls
+                      className="crm-water-hover aspect-video w-full rounded-lg bg-ink/5 object-cover"
+                    />
                   ) : (
                     <div key={v.id} className="flex aspect-video items-center justify-center rounded-lg bg-ink/5 text-xs text-ink/40">
                       Link expired
