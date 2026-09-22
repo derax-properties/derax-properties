@@ -78,14 +78,14 @@ export function AdminSidebar({
           <Link
             href="/admin"
             onClick={revealBeforeNavigating}
-            className="crm-float-chip flex items-center gap-2 rounded-xl px-2.5 py-2.5"
+            className="crm-float-chip crm-brand-chip flex items-center gap-2 rounded-xl px-2.5 py-3"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/derax-mark.png" alt="" className="h-8 w-8 shrink-0" />
+            <img src="/derax-mark.png" alt="" className="crm-logo-mark h-9 w-9 shrink-0" />
             {expanded && (
               <span className="flex flex-col whitespace-nowrap leading-none">
-                <span className="font-display text-lg font-bold">DERAX</span>
-                <span className="text-[9px] font-semibold tracking-[0.35em] text-gold">CRM</span>
+                <span className="font-display text-lg font-extrabold text-cream">DERAX</span>
+                <span className="text-[9px] font-bold tracking-[0.35em] text-gold">CRM</span>
               </span>
             )}
           </Link>
@@ -99,8 +99,8 @@ export function AdminSidebar({
                   href={link.href}
                   onClick={revealBeforeNavigating}
                   title={link.label}
-                  className={`crm-float-chip focus-gold flex items-center gap-3 whitespace-nowrap rounded-lg px-2.5 py-2.5 text-sm font-medium ${
-                    isActive ? "crm-accent-bg text-white" : "text-cream/80 hover:text-gold"
+                  className={`crm-float-chip focus-gold flex items-center gap-3 whitespace-nowrap rounded-lg px-2.5 py-2.5 text-sm font-bold ${
+                    isActive ? "crm-accent-bg text-white" : "text-cream hover:text-gold"
                   }`}
                 >
                   <span className="shrink-0">{link.icon}</span>
@@ -113,12 +113,12 @@ export function AdminSidebar({
 
         <div className="flex flex-col gap-2">
           <div className="crm-float-chip flex items-center gap-2 rounded-xl px-2.5 py-2.5">
-            <PersonIcon className="h-4 w-4 shrink-0 text-cream/60" />
+            <PersonIcon className="h-4 w-4 shrink-0 text-cream/80" />
             {expanded && (
               <div className="min-w-0">
-                <p className="truncate text-xs text-cream/50">{userEmail}</p>
+                <p className="truncate text-xs font-bold text-cream">{userEmail}</p>
                 {roleLabel && (
-                  <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide text-gold/70">{roleLabel}</p>
+                  <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wide text-gold">{roleLabel}</p>
                 )}
               </div>
             )}
@@ -127,7 +127,7 @@ export function AdminSidebar({
             <button
               type="submit"
               title="Sign Out"
-              className="crm-float-chip focus-gold flex w-full items-center gap-3 rounded-lg px-2.5 py-2.5 text-sm font-semibold text-gold hover:text-gold-light"
+              className="crm-float-chip focus-gold flex w-full items-center gap-3 rounded-lg px-2.5 py-2.5 text-sm font-bold text-gold hover:text-gold-light"
             >
               <LogoutIcon className="h-4 w-4 shrink-0" />
               {expanded && <span className="whitespace-nowrap">Sign Out</span>}
