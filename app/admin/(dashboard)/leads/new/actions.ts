@@ -30,8 +30,16 @@ export async function createLeadManually(formData: FormData) {
   const zip = String(formData.get("zip") ?? "").trim();
 
   if (!property_address || !city || !state || !zip) {
-    redirect("/admin/leads/new?error=" + encodeURIComponent("Please fill in every required field."));
+    redirect(
+      "/admin/leads/new?error=" +
+        encodeURIComponent("Please search for and select the property address from the suggestions.")
+    );
   }
+
+  const county = String(formData.get("county") ?? "").trim() || null;
+  const formatted_address = String(formData.get("formatted_address") ?? "").trim() || null;
+  const place_id = String(formData.get("place_id") ?? "").trim() || null;
+  const address_confidence = String(formData.get("address_confidence") ?? "").trim() || null;
 
   const toNumberOrNull = (v: FormDataEntryValue | null) => {
     if (typeof v !== "string" || v.trim() === "") return null;
@@ -55,6 +63,12 @@ export async function createLeadManually(formData: FormData) {
     city,
     state,
     zip,
+    county,
+    formatted_address,
+    latitude: toNumberOrNull(formData.get("latitude")),
+    longitude: toNumberOrNull(formData.get("longitude")),
+    place_id,
+    address_confidence,
     property_type: String(formData.get("property_type") ?? "Single Family"),
     condition: String(formData.get("condition") ?? "").trim() || "Not assessed yet",
     selling_reason: String(formData.get("selling_reason") ?? "").trim() || "Not stated",

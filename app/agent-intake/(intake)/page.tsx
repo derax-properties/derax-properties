@@ -1,3 +1,4 @@
+import { PropertyAddressField } from "@/components/PropertyAddressField";
 import { submitVaLead } from "./actions";
 
 const PROPERTY_TYPES = ["Single Family", "Multi-Family", "Condo", "Townhouse", "Mobile/Manufactured", "Land", "Other"];
@@ -55,12 +56,7 @@ export default function AgentIntakePage({ searchParams }: { searchParams: { succ
 
         <hr className="border-ink/10" />
 
-        <Field label="Property Address" name="property_address" required />
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <Field label="City" name="city" required />
-          <Field label="State" name="state" required />
-          <Field label="ZIP" name="zip" required />
-        </div>
+        <PropertyAddressField required />
         <div className="flex flex-col gap-1.5">
           <label className="text-sm font-medium text-ink/80">Property Type</label>
           <select name="property_type" className="focus-gold rounded-lg border border-ink/15 px-3 py-2 text-sm" defaultValue="Single Family">

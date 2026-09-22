@@ -2,6 +2,7 @@ import Link from "next/link";
 import { PageHeader } from "@/components/admin/PageHeader";
 import { GroupIcon } from "@/components/admin/icons";
 import { LeadPhotosField } from "@/components/admin/LeadPhotosField";
+import { PropertyAddressField } from "@/components/PropertyAddressField";
 import { LEAD_TYPES } from "@/lib/types";
 import { createLeadManually } from "./actions";
 
@@ -61,12 +62,7 @@ export default function NewLeadPage({ searchParams }: { searchParams: { error?: 
 
         <hr className="border-ink/10" />
 
-        <Field label="Property Address" name="property_address" required />
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <Field label="City" name="city" required />
-          <Field label="State" name="state" required />
-          <Field label="ZIP" name="zip" required />
-        </div>
+        <PropertyAddressField required />
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-ink/80">Property Type</label>

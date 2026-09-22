@@ -19,6 +19,26 @@ export async function submitVaLead(formData: FormData) {
 
   const supabase = createServerSupabaseClient();
 
+  const property_address = String(formData.get("property_address") ?? "").trim();
+  const city = String(formData.get("city") ?? "").trim();
+  const state = String(formData.get("state") ?? "").trim();
+  const zip = String(formData.get("zip") ?? "").trim();
+
+  if (!property_address || !city || !state || !zip) {
+    redirect(
+      `/agent-intake?error=${encodeURIComponent("Please search for and select the property address from the suggestions.")}`
+    );
+  }
+
+  const formatted_address = String(formData.get("formatted_address") ?? "").trim() || null;
+  const county = String(formData.get("county") ?? "").trim() || null;
+  const place_id = String(formData.get("place_id") ?? "").trim() || null;
+  const address_confidence = String(formData.get("address_confidence") ?? "").trim() || null;
+  const latRaw = formData.get("latitude");
+  const lngRaw = formData.get("longitude");
+  const latitude = typeof latRaw === "string" && latRaw !== "" && Number.isFinite(Number(latRaw)) ? Number(latRaw) : null;
+  const longitude = typeof lngRaw === "string" && lngRaw !== "" && Number.isFinite(Number(lngRaw)) ? Number(lngRaw) : null;
+
   const payload = {
     first_name: String(formData.get("first_name") ?? "").trim(),
     last_name: String(formData.get("last_name") ?? "").trim(),
@@ -26,10 +46,16 @@ export async function submitVaLead(formData: FormData) {
     email: String(formData.get("email") ?? "").trim() || null,
     preferred_contact: String(formData.get("preferred_contact") ?? "Phone"),
     owner_status: String(formData.get("owner_status") ?? "Yes"),
-    property_address: String(formData.get("property_address") ?? "").trim(),
-    city: String(formData.get("city") ?? "").trim(),
-    state: String(formData.get("state") ?? "").trim(),
-    zip: String(formData.get("zip") ?? "").trim(),
+    property_address,
+    city,
+    state,
+    zip,
+    county,
+    formatted_address,
+    latitude,
+    longitude,
+    place_id,
+    address_confidence,
     property_type: String(formData.get("property_type") ?? "Single Family"),
     condition: String(formData.get("condition") ?? "").trim() || "Not assessed yet",
     selling_reason: String(formData.get("selling_reason") ?? "").trim() || "Not stated",
