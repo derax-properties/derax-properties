@@ -78,14 +78,14 @@ export function AdminSidebar({
           <Link
             href="/admin"
             onClick={revealBeforeNavigating}
-            className="crm-float-chip crm-brand-chip flex items-center gap-2 rounded-xl px-2.5 py-3"
+            className="crm-float-chip crm-brand-chip flex items-center gap-2.5 rounded-xl px-3 py-3"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/derax-mark.png" alt="" className="crm-logo-mark h-9 w-9 shrink-0" />
+            <img src="/derax-mark.png" alt="" className="crm-logo-mark h-11 w-11 shrink-0" />
             {expanded && (
-              <span className="flex flex-col whitespace-nowrap leading-none">
-                <span className="crm-logo-text-3d crm-logo-text-3d--cream font-display text-lg font-extrabold">DERAX</span>
-                <span className="crm-logo-text-3d crm-logo-text-3d--gold text-[9px] font-bold tracking-[0.35em]">CRM</span>
+              <span className="flex flex-col whitespace-nowrap leading-tight">
+                <span className="crm-logo-text-3d crm-logo-text-3d--cream font-display text-xl font-extrabold">DERAX</span>
+                <span className="crm-logo-text-3d crm-logo-text-3d--gold text-[11px] font-bold tracking-[0.18em]">CRM</span>
               </span>
             )}
           </Link>
