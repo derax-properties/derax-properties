@@ -240,7 +240,23 @@ export function LeadsKanban({
       <p className="mb-2 px-1 text-[11px] text-ink/35">
         Drag a card to any column to move it, or use the buttons on the card.
       </p>
-      <div className="grid grid-cols-1 gap-3 overflow-x-auto pb-2 sm:grid-cols-2 lg:grid-flow-col lg:auto-cols-[260px]">
+      {/*
+        Found the actual "Pre-Qualified column hidden behind Qualified"
+        bug: sm:grid-cols-2 sets an EXPLICIT 2-column grid-template-columns
+        that lg:grid-flow-col / lg:auto-cols-[260px] never clear (those two
+        utilities only set grid-auto-flow and grid-auto-columns — neither
+        touches grid-template-columns). Since lg (1024px+) still matches
+        the sm breakpoint, that leftover 2-column template stayed active
+        at desktop width too, so with 9 cards forced into auto-flow:column
+        against only 2 real explicit tracks, the browser was squeezing
+        the first couple of columns down to a sliver — crushing their
+        card text into single-word-per-line ("SELF-", "ENTERED", "MARK",
+        "DEAD", "/", "LOST") and pushing that sliver to peek out from
+        behind the next column's white card. lg:grid-cols-none clears
+        that leftover template so grid-auto-columns:260px is the only
+        thing sizing every column, consistently, at desktop width.
+      */}
+      <div className="grid grid-cols-1 gap-3 overflow-x-auto pb-2 sm:grid-cols-2 lg:grid-cols-none lg:grid-flow-col lg:auto-cols-[260px]">
       {columns.map((col) => (
         <div
           key={col.stage}
@@ -255,7 +271,7 @@ export function LeadsKanban({
             if (draggingId) handleDrop(draggingId, col.stage);
             setDraggingId(null);
           }}
-          className={`rounded-xl bg-white p-3 shadow-sm transition ${
+          className={`min-w-[220px] rounded-xl bg-white p-3 shadow-sm transition ${
             dragOverStage === col.stage ? "ring-2 ring-gold ring-offset-2" : ""
           }`}
         >
