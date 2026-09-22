@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 
 export type GalleryPhoto = { id: string; url: string };
 
@@ -35,6 +36,15 @@ export function LeadPhotoGallery({
 }) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const [isFullScreen, setIsFullScreen] = useState(false);
+  // The lightbox is portaled straight to document.body (see the render
+  // below), so it needs to know the DOM is actually ready to receive it.
+  // On the server, and for the very first client render before hydration
+  // settles, document.body isn't a safe portal target yet — this flips to
+  // true right after mount, which is exactly when it's safe.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const close = useCallback(() => {
     setOpenIndex(null);
@@ -80,75 +90,77 @@ export function LeadPhotoGallery({
         ))}
       </div>
 
-      {active && (
-        <div
-          className={`crm-lightbox-backdrop ${isFullScreen ? "crm-lightbox-backdrop--full" : ""}`}
-          onClick={close}
-        >
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsFullScreen((f) => !f);
-            }}
-            aria-label={isFullScreen ? "Exit full screen" : "View full screen"}
-            title={isFullScreen ? "Exit full screen" : "View full screen"}
-            className="crm-lightbox-fullscreen-toggle"
-          >
-            {isFullScreen ? "⤡" : "⤢"}
-          </button>
-
-          <button type="button" onClick={close} aria-label="Close photo" className="crm-lightbox-close">
-            ✕
-          </button>
-
-          {photos.length > 1 && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                showPrev();
-              }}
-              aria-label="Previous photo"
-              className="crm-lightbox-arrow crm-lightbox-arrow--prev"
-            >
-              ‹
-            </button>
-          )}
-
+      {active && mounted &&
+        createPortal(
           <div
-            className={`crm-lightbox-stage ${isFullScreen ? "crm-lightbox-stage--full" : ""}`}
-            onClick={(e) => e.stopPropagation()}
+            className={`crm-lightbox-backdrop ${isFullScreen ? "crm-lightbox-backdrop--full" : ""}`}
+            onClick={close}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              key={active.id}
-              src={active.url}
-              alt=""
-              className={`crm-lightbox-image ${isFullScreen ? "crm-lightbox-image--full" : ""}`}
-            />
-            {photos.length > 1 && (
-              <p className="crm-lightbox-counter">
-                {(openIndex ?? 0) + 1} / {photos.length}
-              </p>
-            )}
-          </div>
-
-          {photos.length > 1 && (
             <button
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                showNext();
+                setIsFullScreen((f) => !f);
               }}
-              aria-label="Next photo"
-              className="crm-lightbox-arrow crm-lightbox-arrow--next"
+              aria-label={isFullScreen ? "Exit full screen" : "View full screen"}
+              title={isFullScreen ? "Exit full screen" : "View full screen"}
+              className="crm-lightbox-fullscreen-toggle"
             >
-              ›
+              {isFullScreen ? "⤡" : "⤢"}
             </button>
-          )}
-        </div>
-      )}
+
+            <button type="button" onClick={close} aria-label="Close photo" className="crm-lightbox-close">
+              ✕
+            </button>
+
+            {photos.length > 1 && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  showPrev();
+                }}
+                aria-label="Previous photo"
+                className="crm-lightbox-arrow crm-lightbox-arrow--prev"
+              >
+                ‹
+              </button>
+            )}
+
+            <div
+              className={`crm-lightbox-stage ${isFullScreen ? "crm-lightbox-stage--full" : ""}`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                key={active.id}
+                src={active.url}
+                alt=""
+                className={`crm-lightbox-image ${isFullScreen ? "crm-lightbox-image--full" : ""}`}
+              />
+              {photos.length > 1 && (
+                <p className="crm-lightbox-counter">
+                  {(openIndex ?? 0) + 1} / {photos.length}
+                </p>
+              )}
+            </div>
+
+            {photos.length > 1 && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  showNext();
+                }}
+                aria-label="Next photo"
+                className="crm-lightbox-arrow crm-lightbox-arrow--next"
+              >
+                ›
+              </button>
+            )}
+          </div>,
+          document.body
+        )}
     </>
   );
 }
