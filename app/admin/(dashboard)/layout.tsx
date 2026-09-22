@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getCurrentAdminProfile, isOwnerOrAdmin } from "@/lib/supabase/profile";
@@ -6,24 +5,37 @@ import { signOut } from "../login/actions";
 import { Topbar } from "@/components/admin/Topbar";
 import { ThemePicker } from "@/components/admin/ThemePicker";
 import { PageTransition } from "@/components/admin/PageTransition";
+import { AdminSidebar } from "@/components/admin/AdminSidebar";
+import {
+  DashboardIcon,
+  GroupIcon,
+  PersonIcon,
+  DocumentIcon,
+  BuildingIcon,
+  MailIcon,
+  HouseIcon,
+  ChatIcon,
+  GearIcon,
+} from "@/components/admin/icons";
 
 export const metadata = {
   robots: { index: false, follow: false, nocache: true },
 };
 
+const ICON_CLASS = "h-[18px] w-[18px]";
 const BASE_LINKS = [
-  { href: "/admin", label: "Dashboard" },
-  { href: "/admin/leads", label: "Seller Leads" },
-  { href: "/admin/buyers", label: "Cash Buyers" },
-  { href: "/admin/deals", label: "Deals" },
-  { href: "/admin/title-companies", label: "Title Companies" },
-  { href: "/admin/inquiries", label: "Investor Inquiries" },
-  { href: "/admin/properties", label: "Properties" },
-  { href: "/admin/messages", label: "Contact Messages" },
+  { href: "/admin", label: "Dashboard", icon: <DashboardIcon className={ICON_CLASS} /> },
+  { href: "/admin/leads", label: "Seller Leads", icon: <GroupIcon className={ICON_CLASS} /> },
+  { href: "/admin/buyers", label: "Cash Buyers", icon: <PersonIcon className={ICON_CLASS} /> },
+  { href: "/admin/deals", label: "Deals", icon: <DocumentIcon className={ICON_CLASS} /> },
+  { href: "/admin/title-companies", label: "Title Companies", icon: <BuildingIcon className={ICON_CLASS} /> },
+  { href: "/admin/inquiries", label: "Investor Inquiries", icon: <MailIcon className={ICON_CLASS} /> },
+  { href: "/admin/properties", label: "Properties", icon: <HouseIcon className={ICON_CLASS} /> },
+  { href: "/admin/messages", label: "Contact Messages", icon: <ChatIcon className={ICON_CLASS} /> },
 ];
 const OWNER_ADMIN_LINKS = [
-  { href: "/admin/users", label: "Users" },
-  { href: "/admin/settings", label: "Settings" },
+  { href: "/admin/users", label: "Users", icon: <PersonIcon className={ICON_CLASS} /> },
+  { href: "/admin/settings", label: "Settings", icon: <GearIcon className={ICON_CLASS} /> },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -62,50 +74,15 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <div className="crm-shell" data-crm-theme="sage" data-crm-mode="light">
       <div className="crm-canvas min-h-screen font-body text-ink">
-        <div className="flex min-h-screen flex-col lg:flex-row">
-          <aside className="crm-sidebar flex flex-col justify-between gap-6 px-4 py-6 text-cream lg:w-56 lg:shrink-0">
-            <div>
-              <Link href="/admin" className="crm-float-chip flex items-center gap-2 rounded-xl px-3 py-2.5">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/derax-mark.png" alt="" className="h-8 w-8 shrink-0" />
-                <span className="flex flex-col leading-none">
-                  <span className="font-display text-lg font-bold">DERAX</span>
-                  <span className="text-[9px] font-semibold tracking-[0.35em] text-gold">CRM</span>
-                </span>
-              </Link>
-              <nav className="mt-4 flex flex-row gap-2 overflow-x-auto lg:flex-col lg:overflow-visible">
-                {links.map((link) => (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className="crm-float-chip focus-gold whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium text-cream/80 hover:text-gold"
-                  >
-                    {link.label}
-                  </Link>
-                ))}
-              </nav>
-            </div>
-            <div className="flex flex-col gap-2">
-              <div className="crm-float-chip rounded-xl px-3 py-2.5">
-                <p className="truncate text-xs text-cream/50">{user?.email}</p>
-                {profile && (
-                  <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-wide text-gold/70">
-                    {profile.role === "owner" ? "Owner" : "Admin"}
-                  </p>
-                )}
-              </div>
-              <form action={signOut}>
-                <button
-                  type="submit"
-                  className="crm-float-chip focus-gold w-full rounded-lg px-3 py-2 text-sm font-semibold text-gold hover:text-gold-light"
-                >
-                  Sign Out
-                </button>
-              </form>
-            </div>
-          </aside>
+        <div className="flex min-h-screen flex-row">
+          <AdminSidebar
+            links={links}
+            userEmail={user?.email ?? null}
+            roleLabel={profile ? (profile.role === "owner" ? "Owner" : "Admin") : null}
+            signOutAction={signOut}
+          />
 
-          <div className="flex flex-1 flex-col">
+          <div className="flex min-w-0 flex-1 flex-col">
             <Topbar fullName={profile?.full_name ?? null} role={profile?.role ?? null} notificationCount={hotCount ?? 0} />
             <div className="flex items-center justify-end px-4 pt-4 sm:px-8">
               <ThemePicker />

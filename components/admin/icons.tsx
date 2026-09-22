@@ -153,3 +153,41 @@ export function DotsIcon(props: SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
+
+export function DashboardIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" {...base} {...props}>
+      <rect x="3.5" y="3.5" width="7.5" height="7.5" rx="1.5" />
+      <rect x="13" y="3.5" width="7.5" height="4.5" rx="1.5" />
+      <rect x="13" y="10.5" width="7.5" height="10" rx="1.5" />
+      <rect x="3.5" y="13.5" width="7.5" height="7" rx="1.5" />
+    </svg>
+  );
+}
+
+export function GearIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" {...base} {...props}>
+      <circle cx="12" cy="12" r="3.2" />
+      <path d="M12 3.5v2.2M12 18.3v2.2M20.5 12h-2.2M5.7 12H3.5M17.7 6.3l-1.6 1.6M7.9 16.1l-1.6 1.6M17.7 17.7l-1.6-1.6M7.9 7.9 6.3 6.3" />
+    </svg>
+  );
+}
+
+export function MailIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" {...base} {...props}>
+      <rect x="3" y="5.5" width="18" height="13" rx="1.8" />
+      <path d="M4 6.5l8 6.5 8-6.5" />
+    </svg>
+  );
+}
+
+export function LogoutIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" {...base} {...props}>
+      <path d="M9 20H5.5a1.5 1.5 0 0 1-1.5-1.5v-13A1.5 1.5 0 0 1 5.5 4H9" />
+      <path d="M16 16l4-4-4-4M20 12H9" />
+    </svg>
+  );
+}
