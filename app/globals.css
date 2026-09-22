@@ -197,17 +197,26 @@ a.crm-brand-chip:hover {
  * where the extrusion actually reads instead of disappearing into a busy
  * background.
  */
+/*
+ * Readability pass: the first version of this stacked-shadow extrusion
+ * used too many offset layers at too large an offset, which at the small
+ * sizes these words render at (18px for DERAX, 9px for CRM) smeared
+ * adjacent letters into each other instead of reading as depth. This
+ * keeps a little of that same "solid, not flat" feel — one crisp dark
+ * edge plus a soft contact shadow — but leans hard toward pure, bright,
+ * unambiguously legible text first.
+ */
 .crm-logo-text-3d {
   transform: translateZ(0);
+  -webkit-text-stroke: 0.3px rgba(0, 0, 0, 0.35);
 }
 .crm-logo-text-3d.crm-logo-text-3d--gold {
-  color: #f0d78a;
-  text-shadow: 0 1px 0 rgba(255, 241, 200, 0.55), 1px 2px 0 #a9812f, 2px 3px 0 #93701f, 3px 4px 0 #7c5e17,
-    4px 5px 6px rgba(0, 0, 0, 0.65), 4px 5px 12px rgba(233, 199, 90, 0.35);
+  color: #ffe9a8;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.9), 0 2px 4px rgba(0, 0, 0, 0.55);
 }
 .crm-logo-text-3d.crm-logo-text-3d--cream {
-  color: #fbf9f4;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6), 1px 2px 0 #b9b3a4, 2px 3px 0 #948e80, 3px 4px 6px rgba(0, 0, 0, 0.65);
+  color: #ffffff;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.9), 0 2px 5px rgba(0, 0, 0, 0.55);
 }
 
 .crm-canvas {
@@ -649,6 +658,140 @@ a.crm-brand-chip:hover {
   }
   .crm-brand-chip,
   .crm-brand-chip::after {
+    animation: none;
+  }
+}
+
+/*
+ * Lead photo lightbox (components/admin/LeadPhotoGallery.tsx). Opening a
+ * lead's photo used to leave the CRM entirely for a blank browser tab —
+ * this instead floats the photo directly over the CRM itself: the page
+ * behind stays visible, just dimmed and blurred, rather than disappearing,
+ * and the photo pops in with a slight 3D tilt rather than just appearing.
+ */
+.crm-lightbox-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(4, 8, 8, 0.72);
+  backdrop-filter: blur(10px) saturate(1.1);
+  -webkit-backdrop-filter: blur(10px) saturate(1.1);
+  padding: 24px;
+  animation: crm-lightbox-fade-in 200ms ease both;
+}
+
+@keyframes crm-lightbox-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.crm-lightbox-stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: min(92vw, 1000px);
+  max-height: 88vh;
+}
+
+.crm-lightbox-image {
+  display: block;
+  max-width: 100%;
+  max-height: 80vh;
+  width: auto;
+  border-radius: 14px;
+  box-shadow: 0 32px 70px -20px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.1),
+    0 0 60px rgba(16, 185, 129, 0.15);
+  animation: crm-lightbox-pop-in 340ms cubic-bezier(0.2, 0.9, 0.25, 1.15) both;
+}
+
+@keyframes crm-lightbox-pop-in {
+  from {
+    opacity: 0;
+    transform: perspective(1400px) rotateY(10deg) rotateX(-2deg) scale(0.9) translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: perspective(1400px) rotateY(0deg) rotateX(0deg) scale(1) translateY(0);
+  }
+}
+
+.crm-lightbox-counter {
+  margin-top: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.8);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+.crm-lightbox-close,
+.crm-lightbox-arrow {
+  position: absolute;
+  z-index: 101;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  backdrop-filter: blur(4px);
+  transition: background 180ms ease, transform 180ms ease;
+}
+.crm-lightbox-close:hover,
+.crm-lightbox-arrow:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.crm-lightbox-close {
+  top: 20px;
+  right: 20px;
+  height: 40px;
+  width: 40px;
+  font-size: 16px;
+  line-height: 1;
+}
+.crm-lightbox-close:hover {
+  transform: scale(1.08) rotate(90deg);
+}
+
+.crm-lightbox-arrow {
+  top: 50%;
+  transform: translateY(-50%);
+  height: 52px;
+  width: 52px;
+  font-size: 30px;
+  line-height: 1;
+}
+.crm-lightbox-arrow:hover {
+  transform: translateY(-50%) scale(1.1);
+}
+.crm-lightbox-arrow--prev {
+  left: 12px;
+}
+.crm-lightbox-arrow--next {
+  right: 12px;
+}
+
+@media (max-width: 640px) {
+  .crm-lightbox-arrow {
+    height: 42px;
+    width: 42px;
+    font-size: 24px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crm-lightbox-backdrop,
+  .crm-lightbox-image {
     animation: none;
   }
 }

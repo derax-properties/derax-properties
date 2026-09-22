@@ -27,6 +27,7 @@ import { createDeal } from "../../deals/actions";
 import { calculateMAO } from "@/lib/profitAnalysis";
 import { calculateEquityPercent, calculateEquityDollars } from "@/lib/equity";
 import { LeadMediaUploader } from "@/components/admin/LeadMediaUploader";
+import { LeadPhotoGallery } from "@/components/admin/LeadPhotoGallery";
 import { formatDateOnly, formatRelativeTime } from "@/lib/utils";
 
 export const metadata = { title: "Lead Detail", robots: { index: false, follow: false } };
@@ -262,18 +263,13 @@ export default async function LeadDetailPage({
               </a>
             )}
           </div>
-          {photos.length > 0 && (
-            <div className="mt-4 grid grid-cols-4 gap-2">
-              {photos.slice(0, 4).map((p) =>
-                p.url ? (
-                  <a key={p.id} href={p.url} target="_blank" rel="noreferrer" className="crm-water-hover block">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={p.url} alt="" className="aspect-square w-full rounded-lg object-cover" />
-                  </a>
-                ) : null
-              )}
-            </div>
-          )}
+          <LeadPhotoGallery
+            photos={photos
+              .slice(0, 4)
+              .filter((p) => Boolean(p.url))
+              .map((p) => ({ id: p.id, url: p.url as string }))}
+            gridClassName="mt-4 grid grid-cols-4 gap-2"
+          />
         </div>
 
         <FollowUpPanel lead={l} />
@@ -736,18 +732,10 @@ export default async function LeadDetailPage({
           </Panel>
 
           <Panel title="Photos & Videos">
-            {photos.length > 0 && (
-              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-                {photos.map((p) =>
-                  p.url ? (
-                    <a key={p.id} href={p.url} target="_blank" rel="noreferrer" className="crm-water-hover block">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={p.url} alt="" className="aspect-square w-full rounded-lg object-cover" />
-                    </a>
-                  ) : null
-                )}
-              </div>
-            )}
+            <LeadPhotoGallery
+              photos={photos.filter((p) => Boolean(p.url)).map((p) => ({ id: p.id, url: p.url as string }))}
+              gridClassName="grid grid-cols-3 gap-2 sm:grid-cols-4"
+            />
             {videos.length > 0 && (
               <div className={`grid grid-cols-2 gap-2 sm:grid-cols-3 ${photos.length > 0 ? "mt-3" : ""}`}>
                 {videos.map((v) =>
