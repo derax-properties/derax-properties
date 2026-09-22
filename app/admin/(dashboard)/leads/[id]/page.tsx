@@ -232,7 +232,7 @@ export default async function LeadDetailPage({
       )}
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        <div className="rounded-xl bg-white p-5 shadow-sm">
+        <div className="crm-water-hover rounded-xl bg-white p-5 shadow-sm">
           <h2 className="font-display text-lg font-semibold text-ink">Lead Detail — {l.first_name} {l.last_name}</h2>
           <div className="mt-3 flex flex-col gap-2 text-sm">
             <Row label="Address" value={`${l.property_address}, ${l.city}, ${l.state} ${l.zip}`} />
@@ -278,7 +278,7 @@ export default async function LeadDetailPage({
 
         <FollowUpPanel lead={l} />
 
-        <div id="underwriting" className="scroll-mt-24 rounded-xl bg-white p-5 shadow-sm">
+        <div id="underwriting" className="crm-water-hover scroll-mt-24 rounded-xl bg-white p-5 shadow-sm">
           <h2 className="font-display text-lg font-semibold text-ink">Underwriting Snapshot</h2>
           <p className="mt-1 text-xs text-ink/40">
             Entered by your team, not auto-calculated from an outside source — verify comps before offering.
@@ -1021,7 +1021,7 @@ function FollowUpPanel({ lead }: { lead: SellerSubmission }) {
   const completeFollowUpWithId = completeFollowUp.bind(null, lead.id);
 
   return (
-    <div className="rounded-xl bg-white p-5 shadow-sm">
+    <div className="crm-water-hover rounded-xl bg-white p-5 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="font-display text-lg font-semibold text-ink">Follow-Up</h2>
         <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide ${FOLLOW_UP_STATUS_TINT[status]}`}>
@@ -1081,7 +1081,7 @@ function FollowUpPanel({ lead }: { lead: SellerSubmission }) {
 
 function Panel({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-xl bg-white p-5 shadow-sm">
+    <div className="crm-water-hover rounded-xl bg-white p-5 shadow-sm">
       <h2 className="font-display text-lg font-semibold text-ink">{title}</h2>
       <div className="mt-3 flex flex-col gap-2">{children}</div>
     </div>

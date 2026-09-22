@@ -178,7 +178,7 @@ export default async function AdminDashboardPage() {
         <StatTile icon={<AlertClockIcon className="h-5 w-5" />} value={overdueLeads} label="Overdue (3+ days)" tint="bg-amber-50 text-amber-600" />
       </div>
 
-      <div className="mt-8 rounded-xl bg-white p-5 shadow-sm">
+      <div className="crm-water-hover mt-8 rounded-xl bg-white p-5 shadow-sm">
         <div className="flex items-center gap-2.5">
           <span className="crm-accent-soft-bg flex h-8 w-8 items-center justify-center rounded-lg">
             <AlertClockIcon className="h-4 w-4" />
@@ -226,7 +226,7 @@ export default async function AdminDashboardPage() {
         {upcomingFollowUps.length === 0 && <p className="mt-4 text-sm text-ink/40">Nothing overdue or due soon.</p>}
       </div>
 
-      <div className="mt-8 rounded-xl bg-white p-5 shadow-sm">
+      <div className="crm-water-hover mt-8 rounded-xl bg-white p-5 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2.5">
             <span className="crm-accent-soft-bg flex h-8 w-8 items-center justify-center rounded-lg">
@@ -358,14 +358,14 @@ export default async function AdminDashboardPage() {
 
       <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
         {SUMMARY_STATUSES.map((status) => (
-          <div key={status} className="rounded-xl bg-white p-4 shadow-sm">
+          <div key={status} className="crm-water-hover rounded-xl bg-white p-4 shadow-sm">
             <p className="text-2xl font-semibold text-ink">{counts[status] ?? 0}</p>
             <p className="mt-1 text-xs text-ink/50">{status}</p>
           </div>
         ))}
       </div>
 
-      <div className="mt-8 rounded-xl bg-white p-5 shadow-sm">
+      <div className="crm-water-hover mt-8 rounded-xl bg-white p-5 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <span className="crm-accent-soft-bg flex h-8 w-8 items-center justify-center rounded-lg">
@@ -429,7 +429,7 @@ export default async function AdminDashboardPage() {
         </div>
       </div>
 
-      <div className="mt-8 rounded-xl bg-white p-5 shadow-sm">
+      <div className="crm-water-hover mt-8 rounded-xl bg-white p-5 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2.5">
             <span className="crm-accent-soft-bg flex h-8 w-8 items-center justify-center rounded-lg">
@@ -449,7 +449,7 @@ export default async function AdminDashboardPage() {
 
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {DEAL_STAGES.map((stage) => (
-            <div key={stage} className="crm-accent-soft-bg rounded-lg p-3">
+            <div key={stage} className="crm-water-hover crm-accent-soft-bg rounded-lg p-3">
               <p className="text-xl font-semibold text-ink">{dealsByStage[stage]?.length ?? 0}</p>
               <p className="mt-0.5 text-xs text-ink/60">{stage}</p>
             </div>
@@ -495,7 +495,7 @@ function LeadThumbnail({ url }: { url?: string }) {
 
 function StatTile({ icon, value, label, tint }: { icon: React.ReactNode; value: number; label: string; tint: string }) {
   return (
-    <div className="flex items-center gap-3 rounded-xl bg-white p-4 shadow-sm">
+    <div className="crm-water-hover flex items-center gap-3 rounded-xl bg-white p-4 shadow-sm">
       <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${tint}`}>{icon}</span>
       <div>
         <p className="text-2xl font-semibold leading-none text-ink">{value}</p>
