@@ -47,10 +47,43 @@ export async function getPopulationForZip(zip: string): Promise<ZipPopulationCac
 async function fetchFromCensus(zip: string): Promise<{ population: number } | null> {
   try {
     const url = `https://api.census.gov/data/${DATA_YEAR}/acs/acs5?get=NAME,B01003_001E&for=zip%20code%20tabulation%20area:${encodeURIComponent(zip)}`;
-    const res = await fetch(url, { cache: "no-store" });
-    if (!res.ok) return null;
+    const res = await fetch(url, {
+      cache: "no-store",
+      // census.gov was returning a 200 with an HTML page (starting
+      // "<html style...") instead of the actual JSON — the classic sign of
+      // a bot-protection/challenge page, since Node's fetch sends no
+      // User-Agent by default and a lot of gov/enterprise sites wall off
+      // requests that don't look like they came from an actual browser.
+      // Sending a normal browser-ish User-Agent (and asking for JSON
+      // explicitly) is the standard fix for that, and costs nothing if
+      // that wasn't the actual cause.
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        Accept: "application/json",
+      },
+    });
+    if (!res.ok) {
+      console.error("[population] Census lookup returned non-OK status:", res.status);
+      return null;
+    }
 
-    const rows = (await res.json()) as string[][];
+    // Confirm it's actually JSON before parsing — if census.gov (or
+    // something in front of it) ever sends an HTML page again, this fails
+    // clearly with the page's own start logged, instead of a generic
+    // "Unexpected token '<'" JSON.parse crash that doesn't say why.
+    const contentType = res.headers.get("content-type") ?? "";
+    const bodyText = await res.text();
+    if (!contentType.includes("json")) {
+      console.error(
+        "[population] Census lookup returned non-JSON content-type:",
+        contentType,
+        "— first 200 chars:",
+        bodyText.slice(0, 200)
+      );
+      return null;
+    }
+
+    const rows = JSON.parse(bodyText) as string[][];
     // rows[0] is the header; rows[1] is the data row when a match is found.
     if (!rows || rows.length < 2) return null;
 
