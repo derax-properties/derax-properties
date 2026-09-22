@@ -63,6 +63,16 @@ export function AlertClockIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function WallpaperIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" {...base} {...props}>
+      <rect x="3.5" y="4.5" width="17" height="15" rx="2" />
+      <circle cx="9" cy="10" r="1.75" />
+      <path d="M4 16l4.5-4.5a1.5 1.5 0 0 1 2.12 0L15 15.87M13.5 14.37l1.88-1.87a1.5 1.5 0 0 1 2.12 0L20 15" />
+    </svg>
+  );
+}
+
 export function SunIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" {...base} {...props}>

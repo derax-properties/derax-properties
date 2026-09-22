@@ -303,6 +303,38 @@ a.crm-brand-chip:hover {
   background-attachment: fixed;
 }
 
+/*
+ * Wallpaper picker — swaps ONLY the .crm-canvas background image, nothing
+ * else. Deliberately separate from the theme/mode picker above: cards,
+ * text, accent colors, and everything else stay exactly as the current
+ * theme/mode already set them, because these rules only ever touch
+ * background-image. Applied via data-crm-wallpaper on the CRM shell,
+ * set client-side by WallpaperPicker (inside ThemePicker.tsx) and
+ * persisted in localStorage — same pattern as the theme/mode picker.
+ *
+ * Each selector here has the same specificity as the dark-mode canvas
+ * rule above (.crm-shell[attr] .crm-canvas), so placing these AFTER it
+ * in the file is what lets a chosen wallpaper win in both light and dark
+ * mode — a plain "later rule wins on a specificity tie" cascade, not a
+ * hack. No wallpaper selected (no data-crm-wallpaper attribute) falls
+ * straight back to the theme/mode defaults above, unchanged.
+ */
+.crm-shell[data-crm-wallpaper="1"] .crm-canvas {
+  background-image: url("/crm-wallpapers/wallpaper-1.jpg");
+}
+.crm-shell[data-crm-wallpaper="2"] .crm-canvas {
+  background-image: url("/crm-wallpapers/wallpaper-2.jpg");
+}
+.crm-shell[data-crm-wallpaper="3"] .crm-canvas {
+  background-image: url("/crm-wallpapers/wallpaper-3.jpg");
+}
+.crm-shell[data-crm-wallpaper="4"] .crm-canvas {
+  background-image: url("/crm-wallpapers/wallpaper-4.jpg");
+}
+.crm-shell[data-crm-wallpaper="5"] .crm-canvas {
+  background-image: url("/crm-wallpapers/wallpaper-5.jpg");
+}
+
 .crm-accent-bg {
   background-color: var(--crm-accent);
 }
