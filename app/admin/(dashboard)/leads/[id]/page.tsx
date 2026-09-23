@@ -118,9 +118,23 @@ export default async function LeadDetailPage({
   // Storage HTTP request PER FILE (run concurrently, but each still a full
   // round trip) — a lead with a dozen photos meant a dozen requests. This
   // batches each bucket's files into a single signing request instead.
+  //
+  // Photos/videos get a long (7-day) expiry — same window already used for
+  // deal photos in deals/actions.ts — instead of the 10-minute default.
+  // Reason: Supabase mints a brand-new signed token every time this page
+  // renders, so with a short expiry the URL for the *same* photo is
+  // different on every single page load. That silently defeated both the
+  // browser's cache and Next.js's own image-optimization cache — every
+  // reopen re-fetched and re-compressed the photo from scratch no matter
+  // what, which is why photos were still slow to open after switching to
+  // next/image. A stable, long-lived URL lets a photo you already opened
+  // once load instantly the next time. Documents keep the short default —
+  // no real speed benefit there, and shorter-lived links are safer for
+  // anything that might get forwarded.
+  const PHOTO_URL_EXPIRY = 60 * 60 * 24 * 7; // 7 days
   const [photoUrlMap, videoUrlMap, docUrlMap] = await Promise.all([
-    getSignedUrls(photoBucket, (photoRows ?? []).map((p) => p.storage_path)),
-    getSignedUrls(videoBucket, (videoRows ?? []).map((v) => v.storage_path)),
+    getSignedUrls(photoBucket, (photoRows ?? []).map((p) => p.storage_path), PHOTO_URL_EXPIRY),
+    getSignedUrls(videoBucket, (videoRows ?? []).map((v) => v.storage_path), PHOTO_URL_EXPIRY),
     getSignedUrls(docBucket, (docRows ?? []).map((d) => d.storage_path)),
   ]);
   const photos = (photoRows ?? []).map((p) => ({ ...p, url: photoUrlMap.get(p.storage_path) ?? null }));

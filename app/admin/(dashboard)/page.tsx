@@ -171,9 +171,14 @@ export default async function AdminDashboardPage() {
     });
 
     const photoBucket = process.env.SUPABASE_SELLER_PHOTOS_BUCKET || "seller-photos";
+    // Long expiry so this thumbnail's URL stays the same across dashboard
+    // reloads and actually benefits from caching — see the matching note
+    // in leads/[id]/page.tsx for why a short-lived signed URL defeats
+    // image caching entirely (a fresh token every render = a "new" image
+    // to the browser/optimizer every single time).
     await Promise.all(
       Object.entries(firstPathById).map(async ([leadId, path]) => {
-        const url = await getSignedUrl(photoBucket, path);
+        const url = await getSignedUrl(photoBucket, path, 60 * 60 * 24 * 7);
         if (url) coverPhotoUrlById[leadId] = url;
       })
     );
