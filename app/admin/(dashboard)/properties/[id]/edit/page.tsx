@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Image from "next/image";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { Property, PropertyPhoto } from "@/lib/types";
 import { PropertyForm } from "@/components/admin/PropertyForm";
@@ -68,8 +69,16 @@ export default async function EditPropertyPage({
         {photos && photos.length > 0 && (
           <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-4">
             {(photos as PropertyPhoto[]).map((p) => (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img key={p.id} src={p.url} alt="" className="aspect-square w-full rounded-lg object-cover" />
+              <Image
+                key={p.id}
+                src={p.url}
+                alt=""
+                width={0}
+                height={0}
+                sizes="(max-width: 640px) 33vw, 200px"
+                className="aspect-square w-full rounded-lg object-cover"
+                style={{ width: "100%", height: "auto" }}
+              />
             ))}
           </div>
         )}

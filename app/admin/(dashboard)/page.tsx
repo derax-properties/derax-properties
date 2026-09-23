@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { LeadStatus, SellerSubmission, Deal, DealStage, PipelineStage } from "@/lib/types";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -488,11 +489,11 @@ export default async function AdminDashboardPage() {
   );
 }
 
-// Small square cover-photo preview for a lead row. Plain <img>, not
-// next/image — matches how photos render elsewhere in the admin (lead
-// detail page's Photos panel) and avoids remote-pattern config for
-// short-lived signed URLs. Falls back to a muted placeholder when the
-// lead has no photos yet.
+// Small square cover-photo preview for a lead row. Uses next/image (see
+// components/admin/LeadPhotoGallery.tsx for the same fix and reasoning) so
+// this row loads a small, compressed rendition instead of the full-size
+// original — next.config.js already whitelists the Supabase storage host.
+// Falls back to a muted placeholder when the lead has no photos yet.
 function LeadThumbnail({ url }: { url?: string }) {
   if (!url) {
     return (
@@ -501,8 +502,17 @@ function LeadThumbnail({ url }: { url?: string }) {
       </span>
     );
   }
-  // eslint-disable-next-line @next/next/no-img-element
-  return <img src={url} alt="" className="crm-water-hover h-10 w-10 shrink-0 rounded-lg object-cover" />;
+  return (
+    <Image
+      src={url}
+      alt=""
+      width={0}
+      height={0}
+      sizes="40px"
+      className="crm-water-hover h-10 w-10 shrink-0 rounded-lg object-cover"
+      style={{ width: "100%", height: "auto" }}
+    />
+  );
 }
 
 function StatTile({ icon, value, label, tint }: { icon: React.ReactNode; value: number; label: string; tint: string }) {

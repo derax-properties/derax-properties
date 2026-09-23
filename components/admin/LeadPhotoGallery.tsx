@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import Image from "next/image";
 
 export type GalleryPhoto = { id: string; url: string };
 
@@ -84,8 +85,28 @@ export function LeadPhotoGallery({
       <div className={gridClassName}>
         {photos.map((p, i) => (
           <button key={p.id} type="button" onClick={() => setOpenIndex(i)} className="crm-water-hover block">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={p.url} alt="" className="aspect-square w-full rounded-lg object-cover" />
+            {/*
+              Thumbnails were previously a plain <img> pointing straight at the
+              full-resolution original in storage — a multi-megabyte phone
+              photo downloading (and visibly painting in stripe by stripe) just
+              to show a small square preview. next/image requests a properly
+              sized, compressed version instead (built into Next.js/Vercel,
+              already configured in next.config.js — no new service or cost),
+              so this grid now loads fast. width={0}/height={0} + sizes is
+              next/image's documented pattern for "responsive, real aspect
+              ratio unknown ahead of time" — the aspect-square/object-cover
+              classes below control the actual box exactly as before.
+            */}
+            <Image
+              src={p.url}
+              alt=""
+              width={0}
+              height={0}
+              sizes="(max-width: 640px) 33vw, 200px"
+              className="aspect-square w-full rounded-lg object-cover"
+              style={{ width: "100%", height: "auto" }}
+              unoptimized={false}
+            />
           </button>
         ))}
       </div>
@@ -131,12 +152,26 @@ export function LeadPhotoGallery({
               className={`crm-lightbox-stage ${isFullScreen ? "crm-lightbox-stage--full" : ""}`}
               onClick={(e) => e.stopPropagation()}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              {/*
+                This full-size view was the slow one Eric flagged: a raw <img>
+                to the original file, painting in visibly over ~10 seconds on
+                a big phone photo. Same next/image fix as the thumbnails above
+                — the existing crm-lightbox-image / --full CSS classes already
+                define max-width/max-height/width:auto, so this renders at the
+                exact same size as before, just fetched as a resized,
+                compressed version instead of the raw original.
+              */}
+              <Image
                 key={active.id}
                 src={active.url}
                 alt=""
+                width={0}
+                height={0}
+                sizes="(max-width: 640px) 100vw, 1000px"
                 className={`crm-lightbox-image ${isFullScreen ? "crm-lightbox-image--full" : ""}`}
+                style={{ width: "auto", height: "auto" }}
+                unoptimized={false}
+                priority
               />
               {photos.length > 1 && (
                 <p className="crm-lightbox-counter">
