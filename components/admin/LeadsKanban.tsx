@@ -477,9 +477,17 @@ export function LeadsKanban({
                     if (isCompact) setHoveredId(lead.id);
                   }}
                   onMouseLeave={() => setHoveredId((current) => (current === lead.id ? null : current))}
-                  className={`crm-water-hover relative cursor-grab rounded-lg border border-ink/10 text-sm shadow-sm active:cursor-grabbing ${
-                    isCompact ? "p-2" : "p-3"
-                  } ${movingOutId === lead.id ? "crm-kanban-card-out" : ""} ${
+                  // isolate + an explicit z-index turns this card into its
+                  // own self-contained stacking context, so its overlay's
+                  // z-20 is only ever compared against ITS OWN content —
+                  // never left to an implicit/ambiguous comparison against a
+                  // sibling card's stacking level. Zoomed also lifts the
+                  // whole card (isolate context and all) above every sibling,
+                  // so the overlay can never be caught underneath the next
+                  // card in the column, in any browser.
+                  className={`crm-water-hover relative isolate cursor-grab rounded-lg border border-ink/10 text-sm shadow-sm active:cursor-grabbing ${
+                    isZoomed ? "z-30" : "z-0"
+                  } ${isCompact ? "p-2" : "p-3"} ${movingOutId === lead.id ? "crm-kanban-card-out" : ""} ${
                     justMovedId === lead.id ? "crm-kanban-card-in" : ""
                   } ${draggingId === lead.id ? "opacity-40" : ""}`}
                 >
