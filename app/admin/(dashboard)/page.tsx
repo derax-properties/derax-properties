@@ -244,7 +244,7 @@ export default async function AdminDashboardPage() {
         {upcomingFollowUps.length === 0 && <p className="mt-4 text-sm text-ink/40">Nothing overdue or due soon.</p>}
       </div>
 
-      <div className="crm-water-hover mt-8 rounded-xl bg-white p-5 shadow-sm">
+      <div className="mt-8 rounded-xl bg-white p-5 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2.5">
             <span className="crm-accent-soft-bg flex h-8 w-8 items-center justify-center rounded-lg">
@@ -383,7 +383,7 @@ export default async function AdminDashboardPage() {
         ))}
       </div>
 
-      <div className="crm-water-hover mt-8 rounded-xl bg-white p-5 shadow-sm">
+      <div className="mt-8 rounded-xl bg-white p-5 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <span className="crm-accent-soft-bg flex h-8 w-8 items-center justify-center rounded-lg">
