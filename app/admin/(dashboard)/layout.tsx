@@ -50,18 +50,22 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   // this cuts two redundant sequential round-trips that were previously
   // happening on every single admin page navigation, which is most of why
   // switching pages felt slow.
-  const [profile, hotCountResult] = await Promise.all([
+  const [profile, hotLeadsResult] = await Promise.all([
     getCurrentAdminProfile(user),
-    // A simple, real notification count for the topbar bell: leads marked
-    // Hot that are not yet Closed/Not a Fit. Not a fabricated placeholder —
-    // it reflects the same data the Leads page shows.
+    // Real notification data for the topbar bell's dropdown: leads marked
+    // Hot that are not yet Closed/Not a Fit, most recent first. Not a
+    // fabricated placeholder — it reflects the same data the Leads page
+    // shows. We fetch the actual rows (not just a count) so the bell can
+    // list them and link straight to each lead.
     supabase
       .from("seller_submissions")
-      .select("id", { count: "exact", head: true })
+      .select("id, first_name, last_name, property_address, city, state, motivation_level")
       .eq("motivation_level", "Hot")
-      .not("status", "in", '("Closed","Not a Fit")'),
+      .not("status", "in", '("Closed","Not a Fit")')
+      .order("created_at", { ascending: false })
+      .limit(20),
   ]);
-  const hotCount = hotCountResult.count;
+  const hotLeads = hotLeadsResult.data ?? [];
 
   // Defense in depth: middleware.ts already keeps VAs out of /admin
   // entirely, sending them to /agent-intake instead. This is the
@@ -83,7 +87,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           />
 
           <div className="flex min-w-0 flex-1 flex-col">
-            <Topbar fullName={profile?.full_name ?? null} role={profile?.role ?? null} notificationCount={hotCount ?? 0} />
+            <Topbar fullName={profile?.full_name ?? null} role={profile?.role ?? null} notificationLeads={hotLeads} />
             <div className="flex items-center justify-end px-4 pt-4 sm:px-8">
               <ThemePicker />
             </div>
