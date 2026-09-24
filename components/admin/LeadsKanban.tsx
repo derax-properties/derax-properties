@@ -485,7 +485,22 @@ export function LeadsKanban({
                   // whole card (isolate context and all) above every sibling,
                   // so the overlay can never be caught underneath the next
                   // card in the column, in any browser.
-                  className={`crm-water-hover relative isolate cursor-grab rounded-lg border border-ink/10 text-sm shadow-sm active:cursor-grabbing ${
+                  //
+                  // Deliberately NOT using .crm-water-hover here (every
+                  // other card/button in the CRM does) — that class's own
+                  // hover effect (globals.css) applies transform: translateY
+                  // + rotate + scale straight to THIS wrapper on the
+                  // browser's real, native :hover, completely independent of
+                  // the isZoomed state above. A transform on this element
+                  // shifts the positioning frame everything absolutely
+                  // positioned inside it (the overlay) is measured from, so
+                  // every real mouse-hover was quietly tilting and sliding
+                  // the overlay out of alignment with the card underneath —
+                  // the actual cause of the overlap Eric kept seeing even
+                  // after the stacking-context fix above. This card has its
+                  // own dedicated hover interaction (the zoom) already, so
+                  // it drops the generic wobble entirely rather than fight it.
+                  className={`relative isolate cursor-grab rounded-lg border border-ink/10 text-sm shadow-sm transition-shadow duration-150 hover:shadow-md active:cursor-grabbing ${
                     isZoomed ? "z-30" : "z-0"
                   } ${isCompact ? "p-2" : "p-3"} ${movingOutId === lead.id ? "crm-kanban-card-out" : ""} ${
                     justMovedId === lead.id ? "crm-kanban-card-in" : ""
