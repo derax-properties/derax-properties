@@ -136,10 +136,17 @@ export function Topbar({
               </div>
             )}
 
+            {/*
+              Styled as a real button (border + background), not a plain
+              text link, and always clickable regardless of how many leads
+              are in the list above — it goes to the full Leads page either
+              way, per Eric's request that it read and behave like a button
+              you can always press.
+            */}
             <Link
               href="/admin/leads"
               onClick={() => setNotifOpen(false)}
-              className="focus-gold mt-2 block rounded-lg px-2 py-1.5 text-center text-xs font-semibold text-ink/50 hover:bg-ink/5"
+              className="focus-gold crm-water-hover mt-2 block rounded-lg border border-ink/10 bg-ink/5 px-2 py-2 text-center text-xs font-semibold text-ink hover:bg-ink/10"
             >
               View all leads
             </Link>
