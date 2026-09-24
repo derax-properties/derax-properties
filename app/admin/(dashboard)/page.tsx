@@ -508,14 +508,19 @@ function LeadThumbnail({ url }: { url?: string }) {
     );
   }
   return (
+    // Fixed 40x40 avatar-style thumbnail — unlike the responsive gallery
+    // images (width=0/height=0 + a "100%" inline style), this one has a
+    // known, unchanging display size, so it gets explicit width/height
+    // instead. That inline "100%" style (needed for a responsive image)
+    // was overriding the h-10/w-10 classes below it — inline styles beat
+    // Tailwind classes — which is what blew these thumbnails up to fill
+    // their row instead of staying a small square.
     <Image
       src={url}
       alt=""
-      width={0}
-      height={0}
-      sizes="40px"
+      width={40}
+      height={40}
       className="crm-water-hover h-10 w-10 shrink-0 rounded-lg object-cover"
-      style={{ width: "100%", height: "auto" }}
     />
   );
 }
