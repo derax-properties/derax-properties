@@ -760,11 +760,38 @@ a.crm-brand-chip:hover {
   }
 }
 
+/*
+ * A compact Kanban card's hover "zoom" (components/admin/LeadsKanban.tsx).
+ * This is a position:absolute overlay floating on top of the board — not
+ * the real card growing in place — specifically so hovering one card never
+ * pushes any other card around or resizes a column's scroll area. Only this
+ * floating layer scales up; the board underneath it is never touched.
+ */
+.crm-kanban-zoom-overlay {
+  transform-origin: top center;
+  animation: crm-kanban-zoom-in 120ms ease-out;
+}
+
+@keyframes crm-kanban-zoom-in {
+  from {
+    opacity: 0;
+    transform: scale(1);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1.12);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .crm-kanban-card-out,
   .crm-kanban-card-in {
     animation: none;
     transition: none;
+  }
+  .crm-kanban-zoom-overlay {
+    animation: none;
+    transform: scale(1.12);
   }
   .crm-brand-chip,
   .crm-brand-chip::after {

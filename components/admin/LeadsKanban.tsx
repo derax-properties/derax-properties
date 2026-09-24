@@ -306,40 +306,26 @@ export function LeadsKanban({
               // Only a compact card ever zooms — a card that's already
               // full-size has nothing more to reveal on hover.
               const isZoomed = isCompact && hoveredId === lead.id;
-              const showDetails = !isCompact || isZoomed;
-              return (
-                <div
-                  key={lead.id}
-                  draggable
-                  onDragStart={(e) => {
-                    setDraggingId(lead.id);
-                    e.dataTransfer.effectAllowed = "move";
-                  }}
-                  onDragEnd={() => {
-                    setDraggingId(null);
-                    setDragOverStage(null);
-                  }}
-                  onMouseEnter={() => {
-                    if (isCompact) setHoveredId(lead.id);
-                  }}
-                  onMouseLeave={() => setHoveredId((current) => (current === lead.id ? null : current))}
-                  // The zoom transform is set as an inline style rather than a
-                  // Tailwind class so it can't lose a specificity fight with
-                  // .crm-water-hover's own :hover rule (also a transform, also
-                  // active while the mouse is here) — inline style always
-                  // wins, so the zoom is exactly what's on screen, every time.
-                  style={isZoomed ? { transform: "scale(1.12)" } : undefined}
-                  className={`crm-water-hover relative cursor-grab rounded-lg border border-ink/10 text-sm shadow-sm transition-transform duration-150 ease-out active:cursor-grabbing ${
-                    isCompact ? "p-2" : "p-3"
-                  } ${isZoomed ? "z-20 bg-white p-3 shadow-xl" : ""} ${movingOutId === lead.id ? "crm-kanban-card-out" : ""} ${
-                    justMovedId === lead.id ? "crm-kanban-card-in" : ""
-                  } ${draggingId === lead.id ? "opacity-40" : ""}`}
-                >
-                  <Link
-                    href={`/admin/leads/${lead.id}`}
-                    className="focus-gold group block hover:opacity-90"
-                  >
-                    {showDetails && (
+
+              // The card's actual content, factored out so it can be
+              // rendered twice: once at its normal compact size (which is
+              // what reserves the card's real space in the column — this
+              // never changes, hover or not), and once, only while zoomed,
+              // inside a floating overlay positioned on top of the board.
+              //
+              // Previously the "zoom" grew the real card in place (more
+              // content rendered into normal document flow, then scaled up
+              // on top of that) — so hovering one card in a busy column
+              // pushed every card below it down, and the column's own
+              // scrollbar would appear/disappear as that happened. That's
+              // the "dashboard shakes and resizes" Eric reported. Rendering
+              // the detailed view in a position:absolute overlay instead
+              // means it floats above the cards underneath without ever
+              // moving them — the board layout is untouched by hovering.
+              const cardBody = (detailed: boolean) => (
+                <>
+                  <Link href={`/admin/leads/${lead.id}`} className="focus-gold group block hover:opacity-90">
+                    {detailed && (
                       <span className="pointer-events-none absolute right-2 top-2 text-ink/20">
                         <DotsIcon className="h-4 w-4" />
                       </span>
@@ -357,12 +343,13 @@ export function LeadsKanban({
                       pills, follow-up — so the column reads as a scannable
                       list instead of getting taller with every lead added.
                       Hovering a compact card (isZoomed) brings all of this
-                      back for that one card, same as a normal-size card.
-                      The move/reopen/dead-lost buttons below are NEVER
-                      hidden, compact or not — those stay one click away
-                      no matter how many leads are in the column.
+                      back for that one card, in the floating overlay below,
+                      same as a normal-size card. The move/reopen/dead-lost
+                      buttons are NEVER hidden, compact or not — those stay
+                      one click away no matter how many leads are in the
+                      column.
                     */}
-                    {showDetails && (
+                    {detailed && (
                       <>
                         <div className="mt-1.5 flex items-center gap-1.5 text-xs text-ink/50">
                           <PinIcon className="h-3.5 w-3.5 shrink-0" />
@@ -470,6 +457,52 @@ export function LeadsKanban({
                     >
                       Mark Dead / Lost
                     </button>
+                  )}
+                </>
+              );
+
+              return (
+                <div
+                  key={lead.id}
+                  draggable
+                  onDragStart={(e) => {
+                    setDraggingId(lead.id);
+                    e.dataTransfer.effectAllowed = "move";
+                  }}
+                  onDragEnd={() => {
+                    setDraggingId(null);
+                    setDragOverStage(null);
+                  }}
+                  onMouseEnter={() => {
+                    if (isCompact) setHoveredId(lead.id);
+                  }}
+                  onMouseLeave={() => setHoveredId((current) => (current === lead.id ? null : current))}
+                  className={`crm-water-hover relative cursor-grab rounded-lg border border-ink/10 text-sm shadow-sm active:cursor-grabbing ${
+                    isCompact ? "p-2" : "p-3"
+                  } ${movingOutId === lead.id ? "crm-kanban-card-out" : ""} ${
+                    justMovedId === lead.id ? "crm-kanban-card-in" : ""
+                  } ${draggingId === lead.id ? "opacity-40" : ""}`}
+                >
+                  {/*
+                    This always-rendered copy is what actually reserves the
+                    card's space in the column, at its normal compact size —
+                    that size never changes on hover, so nothing below it
+                    ever gets pushed around. While zoomed, it's hidden
+                    (invisible, not removed — so the layout doesn't shift by
+                    even a pixel) in favor of the floating overlay just below.
+                  */}
+                  <div className={isZoomed ? "invisible" : ""}>{cardBody(!isCompact)}</div>
+
+                  {isZoomed && (
+                    <div
+                      // Positioned on top of the board instead of inside its
+                      // flow — see the comment on cardBody above. It's free
+                      // to grow as tall as the full detail needs without
+                      // moving a single other card.
+                      className="crm-kanban-zoom-overlay absolute inset-x-0 top-0 z-20 rounded-lg border border-ink/10 bg-white p-3 shadow-xl"
+                    >
+                      {cardBody(true)}
+                    </div>
                   )}
                 </div>
               );
