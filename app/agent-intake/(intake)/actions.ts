@@ -26,7 +26,7 @@ export async function submitVaLead(formData: FormData) {
 
   if (!property_address || !city || !state || !zip) {
     redirect(
-      `/agent-intake?error=${encodeURIComponent("Please search for and select the property address from the suggestions.")}`
+      `/agent-intake?error=${encodeURIComponent("Please enter the complete property address (street, city, state, and ZIP).")}`
     );
   }
 

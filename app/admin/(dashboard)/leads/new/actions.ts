@@ -32,7 +32,7 @@ export async function createLeadManually(formData: FormData) {
   if (!property_address || !city || !state || !zip) {
     redirect(
       "/admin/leads/new?error=" +
-        encodeURIComponent("Please search for and select the property address from the suggestions.")
+        encodeURIComponent("Please enter the complete property address (street, city, state, and ZIP).")
     );
   }
 
