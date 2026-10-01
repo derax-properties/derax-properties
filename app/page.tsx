@@ -3,6 +3,7 @@ import { FeatureCard } from "@/components/FeatureCard";
 import { PropertyCard } from "@/components/PropertyCard";
 import { CTASection } from "@/components/CTASection";
 import { HeroSlideshow } from "@/components/HeroSlideshow";
+import { DeraxMark } from "@/components/DeraxMark";
 import {
   HouseIcon,
   UsersIcon,
@@ -70,6 +71,18 @@ export default async function HomePage() {
           <br />
           Brighter Futures.
         </p>
+
+        <div className="absolute left-[58%] top-[20%] z-10 hidden w-64 flex-col items-center rounded-2xl border border-amber-300/40 bg-[#110a05]/60 px-6 py-6 text-center shadow-2xl backdrop-blur-md md:flex">
+          <span className="flex h-16 w-16 items-center justify-center rounded-full border border-amber-300/40 bg-white/10 p-2.5">
+            <DeraxMark className="h-full w-full" />
+          </span>
+          <p className="mt-3 font-display text-base font-bold leading-snug text-white tracking-wide">
+            DERAX REAL ESTATE LLC
+          </p>
+          <p className="mt-2 text-[11px] font-semibold tracking-wide text-amber-200/90">
+            The Partner for Convenience
+          </p>
+        </div>
 
         <div className="relative z-10 mx-auto max-w-content px-4 py-20 sm:px-6 md:py-28 lg:px-8">
           <div className="max-w-xl rounded-[20px] border border-amber-400/25 bg-[#110a05]/60 p-7 shadow-2xl backdrop-blur-md backdrop-saturate-150 sm:p-10">
