@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ContactForm } from "@/components/ContactForm";
+import { MailIcon, PhoneIcon, PrinterIcon } from "@/components/icons";
 
 export const metadata: Metadata = {
   title: "Contact",
@@ -27,27 +28,51 @@ export default function ContactPage() {
             from you. Send a message and our team will follow up.
           </p>
 
-          <dl className="mt-10 space-y-4 text-sm">
-            <div>
-              <dt className="font-semibold text-ink">Email</dt>
-              <dd>
-                <a href={`mailto:${EMAIL}`} className="text-gold-dark hover:underline">
-                  {EMAIL}
-                </a>
-              </dd>
+          <dl className="mt-10 space-y-5 text-sm">
+            <div className="flex items-start gap-3.5">
+              <span
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gold/50 text-gold-dark"
+                aria-hidden
+              >
+                <MailIcon className="h-5 w-5" />
+              </span>
+              <div>
+                <dt className="font-semibold text-ink">Email</dt>
+                <dd>
+                  <a href={`mailto:${EMAIL}`} className="text-gold-dark hover:underline">
+                    {EMAIL}
+                  </a>
+                </dd>
+              </div>
             </div>
-            <div>
-              <dt className="font-semibold text-ink">Phone</dt>
-              <dd>
-                <a href={`tel:${PHONE.replace(/\D/g, "")}`} className="text-gold-dark hover:underline">
-                  {PHONE}
-                </a>{" "}
-                <span className="text-ink/50">(call, text, or WhatsApp)</span>
-              </dd>
+            <div className="flex items-start gap-3.5">
+              <span
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gold/50 text-gold-dark"
+                aria-hidden
+              >
+                <PhoneIcon className="h-5 w-5" />
+              </span>
+              <div>
+                <dt className="font-semibold text-ink">Phone</dt>
+                <dd>
+                  <a href={`tel:${PHONE.replace(/\D/g, "")}`} className="text-gold-dark hover:underline">
+                    {PHONE}
+                  </a>{" "}
+                  <span className="text-ink/50">(call, text, or WhatsApp)</span>
+                </dd>
+              </div>
             </div>
-            <div>
-              <dt className="font-semibold text-ink">Fax</dt>
-              <dd className="text-ink/60">{FAX}</dd>
+            <div className="flex items-start gap-3.5">
+              <span
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gold/50 text-gold-dark"
+                aria-hidden
+              >
+                <PrinterIcon className="h-5 w-5" />
+              </span>
+              <div>
+                <dt className="font-semibold text-ink">Fax</dt>
+                <dd className="text-ink/60">{FAX}</dd>
+              </div>
             </div>
             {ADDRESS && (
               <div>
