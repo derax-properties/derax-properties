@@ -72,14 +72,14 @@ export default async function HomePage() {
           Brighter Futures.
         </p>
 
-        <div className="absolute left-[58%] top-[20%] z-10 hidden w-64 flex-col items-center rounded-2xl border border-amber-300/40 bg-[#110a05]/60 px-6 py-6 text-center shadow-2xl backdrop-blur-md md:flex">
-          <span className="flex h-16 w-16 items-center justify-center rounded-full border border-amber-300/40 bg-white/10 p-2.5">
+        <div className="absolute left-[58%] top-[18%] z-10 hidden w-80 flex-col items-center rounded-2xl border border-amber-300/40 bg-[#110a05]/60 px-8 py-10 text-center shadow-2xl backdrop-blur-md md:flex">
+          <span className="flex h-24 w-24 items-center justify-center rounded-full border border-amber-300/40 bg-white/10 p-3.5">
             <DeraxMark className="h-full w-full" />
           </span>
-          <p className="mt-3 font-display text-base font-bold leading-snug text-white tracking-wide">
+          <p className="mt-5 font-display text-xl font-bold leading-snug text-white tracking-wide">
             DERAX REAL ESTATE LLC
           </p>
-          <p className="mt-2 text-[11px] font-semibold tracking-wide text-amber-200/90">
+          <p className="mt-3 text-sm font-semibold tracking-wide text-amber-200/90">
             The Partner for Convenience
           </p>
         </div>
