@@ -2,7 +2,7 @@ import { ButtonLink } from "@/components/Button";
 import { FeatureCard } from "@/components/FeatureCard";
 import { PropertyCard } from "@/components/PropertyCard";
 import { CTASection } from "@/components/CTASection";
-import { HouseIllustration } from "@/components/HouseIllustration";
+import { HeroSlideshow } from "@/components/HeroSlideshow";
 import {
   HouseIcon,
   UsersIcon,
@@ -104,7 +104,7 @@ export default async function HomePage() {
           </div>
 
           <div className="relative">
-            <HouseIllustration className="w-full rounded-2xl shadow-card" />
+            <HeroSlideshow className="w-full rounded-2xl shadow-card" />
             <p className="font-hand absolute right-4 top-4 text-2xl leading-tight text-gold-dark sm:right-6 sm:top-6 sm:text-3xl">
               Better Deals.
               <br />
