@@ -62,60 +62,62 @@ export default async function HomePage() {
   return (
     <>
       {/* ---------------------------------------------------------------- Hero */}
-      <section className="bg-cream-soft">
-        <div className="mx-auto grid max-w-content gap-10 px-4 py-16 sm:px-6 md:grid-cols-2 md:items-center md:py-24 lg:px-8">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gold-dark">
+      <section className="relative isolate overflow-hidden">
+        <HeroSlideshow showDots />
+
+        <p className="font-hand absolute right-4 top-4 z-10 rounded-xl border border-amber-400/30 bg-[#110a05]/50 px-3 py-2 text-xl leading-tight text-amber-200 backdrop-blur-md sm:right-8 sm:top-8 sm:text-2xl">
+          Better Deals.
+          <br />
+          Brighter Futures.
+        </p>
+
+        <div className="relative z-10 mx-auto max-w-content px-4 py-20 sm:px-6 md:py-28 lg:px-8">
+          <div className="max-w-xl rounded-[20px] border border-amber-400/25 bg-[#110a05]/60 p-7 shadow-2xl backdrop-blur-md backdrop-saturate-150 sm:p-10">
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-amber-300">
               Real Estate Opportunities
             </p>
-            <h1 className="mt-4 font-display text-4xl font-bold leading-tight text-forest text-balance sm:text-5xl">
+            <h1 className="mt-4 font-display text-4xl font-bold leading-tight text-white text-balance sm:text-5xl">
               Distressed Properties.
               <br />
               Real Solutions.
             </h1>
-            <p className="mt-6 max-w-lg font-display text-lg font-semibold text-forest sm:text-xl">
+            <p className="mt-6 max-w-lg font-display text-lg font-semibold text-amber-200 sm:text-xl">
               We Buy Houses for Cash — As-Is, On a Timeline We Schedule Together
             </p>
-            <p className="mt-3 max-w-lg text-base text-ink/60 sm:text-lg">
+            <p className="mt-3 max-w-lg text-base text-white/85 sm:text-lg">
               We buy houses for cash, as-is, with no need for repairs or renovations, and we
               close according to a timeline we schedule together with you.
             </p>
-            <p className="mt-4 max-w-lg text-base text-ink/60 sm:text-lg">
+            <p className="mt-4 max-w-lg text-base text-white/85 sm:text-lg">
               At DERAX REAL ESTATE LLC, we turn the challenges of selling a distressed property
               into a simple and convenient process. No repairs, no complicated process, and no
               need to wait for a traditional buyer.
             </p>
-            <p className="mt-4 max-w-lg text-base text-ink/60 sm:text-lg">
+            <p className="mt-4 max-w-lg text-base text-white/85 sm:text-lg">
               Our goal is to make selling your property simple, straightforward, and convenient
               from start to finish.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <ButtonLink href="/sell-your-property" className="!bg-forest !text-cream hover:!bg-forest-light">
+              <ButtonLink
+                href="/sell-your-property"
+                className="!border !border-[#8a5a22] !bg-gradient-to-b !from-amber-300 !via-amber-500 !to-[#b9732a] !text-[#2b1a0f] !shadow-[0_1px_0_rgba(255,255,255,0.6)_inset,0_-4px_10px_rgba(0,0,0,0.18)_inset,0_14px_28px_-8px_rgba(0,0,0,0.5)] hover:!from-amber-200 hover:!via-amber-400 hover:!to-[#a9681f]"
+              >
                 Submit Your Property →
               </ButtonLink>
               <ButtonLink
                 href="/properties"
                 variant="outline"
-                className="!border-forest !text-forest hover:!bg-forest hover:!text-cream"
+                className="!border-white/50 !bg-white/10 !text-white hover:!bg-white/20"
               >
                 View Properties
               </ButtonLink>
             </div>
           </div>
-
-          <div className="relative">
-            <HeroSlideshow className="w-full rounded-2xl shadow-card" />
-            <p className="font-hand absolute right-4 top-4 text-2xl leading-tight text-gold-dark sm:right-6 sm:top-6 sm:text-3xl">
-              Better Deals.
-              <br />
-              Brighter Futures.
-            </p>
-          </div>
         </div>
       </section>
 
       {/* -------------------------------------------------------- Trust strip */}
-      <section className="bg-forest">
+      <section className="bg-[#1c0f08]">
         <div className="mx-auto grid max-w-content grid-cols-1 divide-y divide-white/10 px-4 sm:grid-cols-2 sm:divide-x sm:divide-y-0 sm:px-6 lg:grid-cols-4 lg:px-8">
           <FeatureCard
             dark
