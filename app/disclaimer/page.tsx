@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Disclaimer",
-  description: "Important disclaimer regarding Derax Properties and this website.",
+  description: "Important disclaimer regarding DERAX REAL ESTATE LLC and this website.",
 };
 
 export default function DisclaimerPage() {
@@ -13,8 +13,8 @@ export default function DisclaimerPage() {
 
         <div className="mt-8 space-y-6 text-ink/70">
           <p>
-            Derax Properties is a real estate investment and wholesaling company. Unless
-            specifically stated otherwise, Derax Properties and its representatives are not
+            DERAX REAL ESTATE LLC is a real estate investment and wholesaling company. Unless
+            specifically stated otherwise, DERAX REAL ESTATE LLC and its representatives are not
             acting as a licensed real estate broker or agent in any transaction described on this
             website.
           </p>

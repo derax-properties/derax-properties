@@ -73,9 +73,21 @@ export default async function HomePage() {
               <br />
               Real Solutions.
             </h1>
-            <p className="mt-6 max-w-lg text-base text-ink/60 sm:text-lg">
-              We help homeowners, investors, and buyers unlock value through off-market and
-              distressed property opportunities across the U.S.
+            <p className="mt-6 max-w-lg font-display text-lg font-semibold text-forest sm:text-xl">
+              We Buy Houses for Cash — As-Is, On a Timeline We Schedule Together
+            </p>
+            <p className="mt-3 max-w-lg text-base text-ink/60 sm:text-lg">
+              We buy houses for cash, as-is, with no need for repairs or renovations, and we
+              close according to a timeline we schedule together with you.
+            </p>
+            <p className="mt-4 max-w-lg text-base text-ink/60 sm:text-lg">
+              At DERAX REAL ESTATE LLC, we turn the challenges of selling a distressed property
+              into a simple and convenient process. No repairs, no complicated process, and no
+              need to wait for a traditional buyer.
+            </p>
+            <p className="mt-4 max-w-lg text-base text-ink/60 sm:text-lg">
+              Our goal is to make selling your property simple, straightforward, and convenient
+              from start to finish.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <ButtonLink href="/sell-your-property" className="!bg-forest !text-cream hover:!bg-forest-light">

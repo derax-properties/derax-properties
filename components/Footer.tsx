@@ -20,6 +20,7 @@ const LEGAL = [
 ];
 
 const PHONE = process.env.NEXT_PUBLIC_COMPANY_PHONE ?? "(XXX) XXX-XXXX";
+const FAX = "+1 831 708 0593";
 const EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? "info@deraxproperties.com";
 const ADDRESS = process.env.NEXT_PUBLIC_COMPANY_ADDRESS ?? "";
 
@@ -97,6 +98,7 @@ export function Footer() {
                 </a>
                 <span className="block text-xs text-cream/50">Call, text, or WhatsApp</span>
               </li>
+              <li className="text-cream/60">Fax: {FAX}</li>
               {ADDRESS && <li className="text-cream/60">{ADDRESS}</li>}
               <li className="text-cream/60">Nationwide</li>
             </ul>
@@ -117,8 +119,8 @@ export function Footer() {
         </div>
 
         <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-6 text-xs text-cream/50 sm:flex-row">
-          <p>© {new Date().getFullYear()} Derax Properties. All rights reserved.</p>
-          <p>Derax Properties is not a licensed real estate brokerage unless stated otherwise.</p>
+          <p>© {new Date().getFullYear()} DERAX REAL ESTATE LLC. All rights reserved.</p>
+          <p>DERAX REAL ESTATE LLC is not a licensed real estate brokerage unless stated otherwise.</p>
         </div>
       </div>
     </footer>

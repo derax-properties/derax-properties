@@ -3,10 +3,11 @@ import { ContactForm } from "@/components/ContactForm";
 
 export const metadata: Metadata = {
   title: "Contact",
-  description: "Get in touch with Derax Properties about selling, buying, or investing.",
+  description: "Get in touch with DERAX REAL ESTATE LLC about selling, buying, or investing.",
 };
 
 const PHONE = process.env.NEXT_PUBLIC_COMPANY_PHONE ?? "(XXX) XXX-XXXX";
+const FAX = "+1 831 708 0593";
 const EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? "info@deraxproperties.com";
 const ADDRESS = process.env.NEXT_PUBLIC_COMPANY_ADDRESS ?? "";
 
@@ -43,6 +44,10 @@ export default function ContactPage() {
                 </a>{" "}
                 <span className="text-ink/50">(call, text, or WhatsApp)</span>
               </dd>
+            </div>
+            <div>
+              <dt className="font-semibold text-ink">Fax</dt>
+              <dd className="text-ink/60">{FAX}</dd>
             </div>
             {ADDRESS && (
               <div>

@@ -5,7 +5,7 @@ import type { Property } from "@/lib/types";
 
 export const metadata: Metadata = {
   title: "Available Properties",
-  description: "Browse distressed, off-market, and investment properties from Derax Properties.",
+  description: "Browse distressed, off-market, and investment properties from DERAX REAL ESTATE LLC.",
 };
 
 export const revalidate = 60;

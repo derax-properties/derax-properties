@@ -8,7 +8,7 @@ export async function updateSettings(formData: FormData) {
   const supabase = createServerSupabaseClient();
 
   const payload = {
-    company_name: String(formData.get("company_name") ?? "Derax Properties"),
+    company_name: String(formData.get("company_name") ?? "DERAX REAL ESTATE LLC"),
     phone: String(formData.get("phone") ?? "") || null,
     notification_email: String(formData.get("notification_email") ?? "info@deraxproperties.com"),
     facebook_url: String(formData.get("facebook_url") ?? "") || null,

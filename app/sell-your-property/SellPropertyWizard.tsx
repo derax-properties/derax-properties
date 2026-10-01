@@ -617,7 +617,7 @@ export function SellPropertyWizard() {
             </ReviewSection>
 
             <CheckboxRow
-              label="By submitting this form, I agree that Derax Properties may contact me regarding my property using the information provided, including by phone, text, or email. Message and data rates may apply."
+              label="By submitting this form, I agree that DERAX REAL ESTATE LLC may contact me regarding my property using the information provided, including by phone, text, or email. Message and data rates may apply."
               checked={values.consent}
               onChange={(v) => set("consent", v)}
             />
@@ -628,7 +628,7 @@ export function SellPropertyWizard() {
             )}
 
             <p className="text-xs text-ink/40">
-              Submitting this form does not guarantee that Derax Properties will make an offer on
+              Submitting this form does not guarantee that DERAX REAL ESTATE LLC will make an offer on
               your property, or a specific price. We review every submission individually.
             </p>
 

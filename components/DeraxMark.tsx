@@ -21,7 +21,7 @@ export function DeraxMark({ className }: { className?: string }) {
       viewBox="0 0 200 240"
       className={className}
       role="img"
-      aria-label="Derax Properties"
+      aria-label="DERAX REAL ESTATE LLC"
     >
       <defs>
         <linearGradient id={faceId} x1="0%" y1="0%" x2="100%" y2="100%">

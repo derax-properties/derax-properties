@@ -6,7 +6,7 @@ import { TargetIcon, ShieldCheckIcon, UsersIcon, TrendUpIcon } from "@/component
 export const metadata: Metadata = {
   title: "About",
   description:
-    "Derax Properties is a real estate investment company focused on straightforward solutions for property owners and real access to opportunities for investors.",
+    "DERAX REAL ESTATE LLC is a real estate investment company focused on straightforward solutions for property owners and real access to opportunities for investors.",
 };
 
 export default function AboutPage() {
@@ -24,7 +24,7 @@ export default function AboutPage() {
       <section className="bg-cream-soft">
         <div className="mx-auto max-w-3xl px-4 py-16 text-ink/70 sm:px-6 lg:px-8">
           <p className="text-lg leading-relaxed">
-            Derax Properties is a real estate investment company focused on creating
+            DERAX REAL ESTATE LLC is a real estate investment company focused on creating
             straightforward solutions for property owners and pursuing real estate investment
             opportunities.
           </p>

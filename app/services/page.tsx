@@ -6,7 +6,7 @@ import { HouseIcon, CoinsIcon, TrendUpIcon, HandshakeIcon } from "@/components/i
 export const metadata: Metadata = {
   title: "Services",
   description:
-    "Derax Properties buys houses directly — cash offers, fast closings, and investment opportunities nationwide.",
+    "DERAX REAL ESTATE LLC buys houses directly — cash offers, fast closings, and investment opportunities nationwide.",
 };
 
 export default function ServicesPage() {
@@ -22,7 +22,7 @@ export default function ServicesPage() {
           </h1>
           <p className="mt-5 max-w-xl text-cream/60">
             Whether you need a fast, guaranteed sale on your property or you&apos;re an investor
-            looking for your next deal, Derax Properties buys directly and closes on your
+            looking for your next deal, DERAX REAL ESTATE LLC buys directly and closes on your
             timeline.
           </p>
         </div>

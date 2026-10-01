@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Privacy Policy",
-  description: "How Derax Properties collects, uses, and protects your information.",
+  description: "How DERAX REAL ESTATE LLC collects, uses, and protects your information.",
 };
 
 export default function PrivacyPolicyPage() {
@@ -14,7 +14,7 @@ export default function PrivacyPolicyPage() {
 
         <div className="mt-8 space-y-6 text-ink/70">
           <p>
-            Derax Properties (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) respects your
+            DERAX REAL ESTATE LLC (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) respects your
             privacy. This Privacy Policy explains what information we collect through this
             website, how we use it, and the choices you have.
           </p>
@@ -36,7 +36,7 @@ export default function PrivacyPolicyPage() {
 
           <h2 className="font-display text-xl font-semibold text-ink">Communications</h2>
           <p>
-            By submitting a form on this website, you agree that Derax Properties may contact you
+            By submitting a form on this website, you agree that DERAX REAL ESTATE LLC may contact you
             regarding your inquiry using the phone number, email address, or other contact
             information you provided, including by phone, text message, or email. Message and
             data rates may apply. You may opt out of communications at any time by replying STOP

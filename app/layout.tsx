@@ -28,25 +28,24 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.deraxrealestate
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Derax Real Estate | Derax Properties — Off-Market Real Estate Opportunities",
-    template: "%s | Derax Properties",
+    default: "DERAX REAL ESTATE LLC — Off-Market Real Estate Opportunities",
+    template: "%s | DERAX REAL ESTATE LLC",
   },
   description:
-    "Derax Properties (Derax Real Estate) connects homeowners, investors, and buyers with distressed, off-market, and real estate investment opportunities nationwide.",
+    "DERAX REAL ESTATE LLC connects homeowners, investors, and buyers with distressed, off-market, and real estate investment opportunities nationwide.",
   keywords: [
-    "Derax Properties",
-    "Derax Real Estate",
+    "DERAX REAL ESTATE LLC",
     "off-market real estate",
     "distressed properties",
     "we buy houses",
     "real estate wholesaling",
   ],
   openGraph: {
-    title: "Derax Real Estate | Derax Properties — Off-Market Real Estate Opportunities",
+    title: "DERAX REAL ESTATE LLC — Off-Market Real Estate Opportunities",
     description:
-      "Derax Properties (Derax Real Estate) connects homeowners, investors, and buyers with distressed, off-market, and real estate investment opportunities nationwide.",
+      "DERAX REAL ESTATE LLC connects homeowners, investors, and buyers with distressed, off-market, and real estate investment opportunities nationwide.",
     url: siteUrl,
-    siteName: "Derax Properties",
+    siteName: "DERAX REAL ESTATE LLC",
     type: "website",
   },
   robots: {

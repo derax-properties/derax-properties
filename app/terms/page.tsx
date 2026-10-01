@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Terms of Use",
-  description: "Terms of use for the Derax Properties website.",
+  description: "Terms of use for the DERAX REAL ESTATE LLC website.",
 };
 
 export default function TermsPage() {
@@ -14,20 +14,20 @@ export default function TermsPage() {
 
         <div className="mt-8 space-y-6 text-ink/70">
           <p>
-            These Terms of Use govern your access to and use of the Derax Properties website. By
+            These Terms of Use govern your access to and use of the DERAX REAL ESTATE LLC website. By
             using this site, you agree to these terms.
           </p>
 
           <h2 className="font-display text-xl font-semibold text-ink">Use of This Website</h2>
           <p>
             This website is provided for informational purposes to connect property owners,
-            buyers, and investors with Derax Properties. You agree to provide accurate
+            buyers, and investors with DERAX REAL ESTATE LLC. You agree to provide accurate
             information when submitting a form and not to use this site for any unlawful purpose.
           </p>
 
           <h2 className="font-display text-xl font-semibold text-ink">No Guarantee of Offer or Purchase</h2>
           <p>
-            Submitting a property does not obligate Derax Properties to make an offer or complete
+            Submitting a property does not obligate DERAX REAL ESTATE LLC to make an offer or complete
             a purchase, and does not obligate the submitting party to accept any offer that may be
             made. Every property is evaluated individually, and outcomes vary based on the
             specifics of each situation.
@@ -50,7 +50,7 @@ export default function TermsPage() {
 
           <h2 className="font-display text-xl font-semibold text-ink">Limitation of Liability</h2>
           <p>
-            Derax Properties is not liable for any indirect, incidental, or consequential damages
+            DERAX REAL ESTATE LLC is not liable for any indirect, incidental, or consequential damages
             arising from your use of this website.
           </p>
 
