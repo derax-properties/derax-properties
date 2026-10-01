@@ -44,8 +44,8 @@ export function Footer() {
               <DeraxMark className="h-12 w-12 shrink-0" />
               <div className="flex flex-col leading-none">
                 <span className="font-display text-xl font-bold text-cream">DERAX</span>
-                <span className="text-[10px] font-semibold tracking-[0.35em] text-gold">
-                  REAL ESTATE
+                <span className="whitespace-nowrap text-[10px] font-semibold tracking-[0.35em] text-gold">
+                  REAL ESTATE LLC
                 </span>
               </div>
             </div>

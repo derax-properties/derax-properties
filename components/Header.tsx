@@ -33,8 +33,8 @@ export function Header() {
             <span className="bg-gradient-to-b from-forest-light via-forest to-forest-dark bg-clip-text font-display text-xl font-bold tracking-wide text-transparent drop-shadow-sm sm:text-2xl">
               DERAX
             </span>
-            <span className="text-[10px] font-semibold tracking-[0.35em] text-gold-dark sm:text-xs">
-              REAL ESTATE
+            <span className="whitespace-nowrap text-[10px] font-semibold tracking-[0.35em] text-gold-dark sm:text-xs">
+              REAL ESTATE LLC
             </span>
           </span>
         </Link>
