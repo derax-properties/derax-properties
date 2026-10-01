@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { cx } from "@/lib/utils";
 import { DeraxMark } from "@/components/DeraxMark";
 
@@ -13,6 +13,15 @@ const NAV_LINKS = [
   { href: "/properties", label: "Properties" },
   { href: "/contact", label: "Contact" },
 ];
+
+/** Raised, beveled "3D" purple button style for the header's CTA. */
+const PURPLE_3D_STYLE: CSSProperties = {
+  background: "linear-gradient(180deg, #c99bfa 0%, #9333ea 55%, #6b21a8 100%)",
+  boxShadow:
+    "inset 0 1px 0 rgba(255,255,255,0.55), inset 0 -4px 10px rgba(0,0,0,0.25), 0 10px 22px -8px rgba(88,28,135,0.6), 0 2px 0 #4c1d75",
+  border: "1px solid #4c1d75",
+  color: "#ffffff",
+};
 
 export function Header() {
   const pathname = usePathname();
@@ -63,7 +72,8 @@ export function Header() {
         <div className="hidden lg:block">
           <Link
             href="/sell-your-property"
-            className="focus-gold inline-flex items-center gap-2 rounded-full bg-forest px-5 py-2.5 text-sm font-semibold text-cream transition-colors hover:bg-forest-light"
+            style={PURPLE_3D_STYLE}
+            className="focus-gold inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition hover:brightness-110 active:brightness-95"
           >
             Submit Your Property
           </Link>
@@ -123,7 +133,8 @@ export function Header() {
           <Link
             href="/sell-your-property"
             onClick={() => setOpen(false)}
-            className="focus-gold mt-4 flex items-center justify-center gap-2 rounded-full bg-forest px-5 py-3 text-sm font-semibold text-cream"
+            style={PURPLE_3D_STYLE}
+            className="focus-gold mt-4 flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold transition hover:brightness-110 active:brightness-95"
           >
             Submit Your Property
           </Link>

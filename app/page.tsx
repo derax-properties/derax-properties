@@ -100,7 +100,14 @@ export default async function HomePage() {
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <ButtonLink
                 href="/sell-your-property"
-                className="!border !border-[#8a5a22] !bg-gradient-to-b !from-amber-300 !via-amber-500 !to-[#b9732a] !text-[#2b1a0f] !shadow-[0_1px_0_rgba(255,255,255,0.6)_inset,0_-4px_10px_rgba(0,0,0,0.18)_inset,0_14px_28px_-8px_rgba(0,0,0,0.5)] hover:!from-amber-200 hover:!via-amber-400 hover:!to-[#a9681f]"
+                className="transition hover:brightness-110 active:brightness-95"
+                style={{
+                  background: "linear-gradient(180deg, #fdba74 0%, #f97316 55%, #c2410c 100%)",
+                  boxShadow:
+                    "inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -4px 10px rgba(0,0,0,0.2), 0 14px 28px -8px rgba(154,52,18,0.6), 0 2px 0 #9a3412",
+                  border: "1px solid #9a3412",
+                  color: "#431407",
+                }}
               >
                 Submit Your Property →
               </ButtonLink>

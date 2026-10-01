@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import type { ButtonHTMLAttributes, CSSProperties, ReactNode } from "react";
 import { cx } from "@/lib/utils";
 
 type Variant = "primary" | "outline" | "ghost";
@@ -17,6 +17,7 @@ interface CommonProps {
   variant?: Variant;
   children: ReactNode;
   className?: string;
+  style?: CSSProperties;
 }
 
 export function ButtonLink({
@@ -24,9 +25,10 @@ export function ButtonLink({
   variant = "primary",
   children,
   className,
+  style,
 }: CommonProps & { href: string }) {
   return (
-    <Link href={href} className={cx(base, variants[variant], className)}>
+    <Link href={href} className={cx(base, variants[variant], className)} style={style}>
       {children}
     </Link>
   );
