@@ -73,9 +73,7 @@ export default async function HomePage() {
         </p>
 
         <div className="absolute left-[64%] top-1/2 z-10 hidden w-[26rem] -translate-y-1/2 flex-col items-center rounded-2xl border border-amber-300/40 bg-[#110a05]/60 px-10 py-12 text-center shadow-2xl backdrop-blur-md xl:flex">
-          <span className="flex h-32 w-32 items-center justify-center rounded-full border border-amber-300/40 bg-white/10 p-4">
-            <DeraxMark className="h-full w-full" />
-          </span>
+          <DeraxMark className="h-28 w-28" />
           <p className="mt-6 font-display text-2xl font-bold leading-snug text-white tracking-wide">
             DERAX REAL ESTATE LLC
           </p>
