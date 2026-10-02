@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { DeraxMark } from "@/components/DeraxMark";
+import { MailIcon, PhoneIcon, PrinterIcon } from "@/components/icons";
 
 const NAV = [
   { href: "/", label: "Home" },
@@ -86,19 +87,41 @@ export function Footer() {
             <h3 className="text-xs font-semibold uppercase tracking-[0.2em] text-gold">
               Contact
             </h3>
-            <ul className="mt-4 space-y-2 text-sm">
-              <li>
-                <a href={`mailto:${EMAIL}`} className="focus-gold hover:text-gold">
+            <ul className="mt-4 space-y-3 text-sm">
+              <li className="flex items-start gap-2.5">
+                <span
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-gold/40 text-gold"
+                  aria-hidden
+                >
+                  <MailIcon className="h-4 w-4" />
+                </span>
+                <a href={`mailto:${EMAIL}`} className="focus-gold pt-1.5 hover:text-gold">
                   {EMAIL}
                 </a>
               </li>
-              <li>
-                <a href={`tel:${PHONE.replace(/\D/g, "")}`} className="focus-gold hover:text-gold">
-                  {PHONE}
-                </a>
-                <span className="block text-xs text-cream/50">Call, text, or WhatsApp</span>
+              <li className="flex items-start gap-2.5">
+                <span
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-gold/40 text-gold"
+                  aria-hidden
+                >
+                  <PhoneIcon className="h-4 w-4" />
+                </span>
+                <span className="pt-1.5">
+                  <a href={`tel:${PHONE.replace(/\D/g, "")}`} className="focus-gold hover:text-gold">
+                    {PHONE}
+                  </a>
+                  <span className="block text-xs text-cream/50">Call, text, or WhatsApp</span>
+                </span>
               </li>
-              <li className="text-cream/60">Fax: {FAX}</li>
+              <li className="flex items-start gap-2.5">
+                <span
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-gold/40 text-gold"
+                  aria-hidden
+                >
+                  <PrinterIcon className="h-4 w-4" />
+                </span>
+                <span className="pt-1.5 text-cream/60">Fax: {FAX}</span>
+              </li>
               {ADDRESS && <li className="text-cream/60">{ADDRESS}</li>}
               <li className="text-cream/60">Nationwide</li>
             </ul>
