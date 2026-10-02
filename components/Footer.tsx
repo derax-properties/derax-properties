@@ -122,6 +122,15 @@ export function Footer() {
           <p>© {new Date().getFullYear()} DERAX REAL ESTATE LLC. All rights reserved.</p>
           <p>DERAX REAL ESTATE LLC is not a licensed real estate brokerage unless stated otherwise.</p>
         </div>
+
+        <div className="mt-4 flex justify-center sm:justify-end">
+          <Link
+            href="/admin/login"
+            className="rounded-full border border-white/10 px-2.5 py-1 text-[10px] font-medium text-cream/30 transition-colors hover:border-white/20 hover:text-cream/60"
+          >
+            Admin
+          </Link>
+        </div>
       </div>
     </footer>
   );
