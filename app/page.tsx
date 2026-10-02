@@ -63,7 +63,7 @@ export default async function HomePage() {
   return (
     <>
       {/* ---------------------------------------------------------------- Hero */}
-      <section className="relative isolate overflow-hidden">
+      <section className="relative isolate flex min-h-screen items-center overflow-hidden">
         <HeroSlideshow showDots />
 
         <p className="font-hand absolute right-4 top-4 z-10 rounded-xl border border-amber-400/30 bg-[#110a05]/50 px-3 py-2 text-xl leading-tight text-amber-200 backdrop-blur-md sm:right-8 sm:top-8 sm:text-2xl">
@@ -72,7 +72,7 @@ export default async function HomePage() {
           Brighter Futures.
         </p>
 
-        <div className="absolute left-[58%] top-[18%] z-10 hidden w-80 flex-col items-center rounded-2xl border border-amber-300/40 bg-[#110a05]/60 px-8 py-10 text-center shadow-2xl backdrop-blur-md md:flex">
+        <div className="absolute left-[58%] top-[10%] z-10 hidden w-80 flex-col items-center rounded-2xl border border-amber-300/40 bg-[#110a05]/60 px-8 py-10 text-center shadow-2xl backdrop-blur-md md:flex">
           <span className="flex h-24 w-24 items-center justify-center rounded-full border border-amber-300/40 bg-white/10 p-3.5">
             <DeraxMark className="h-full w-full" />
           </span>
@@ -84,33 +84,33 @@ export default async function HomePage() {
           </p>
         </div>
 
-        <div className="relative z-10 mx-auto max-w-content px-4 py-20 sm:px-6 md:py-28 lg:px-8">
-          <div className="max-w-xl rounded-[20px] border border-amber-400/25 bg-[#110a05]/60 p-7 shadow-2xl backdrop-blur-md backdrop-saturate-150 sm:p-10">
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-amber-300">
+        <div className="relative z-10 mx-auto w-full max-w-content px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
+          <div className="max-w-3xl rounded-[20px] border border-amber-400/25 bg-[#110a05]/65 p-8 shadow-2xl backdrop-blur-md backdrop-saturate-150 sm:p-10 md:p-14">
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-amber-300 sm:text-sm sm:tracking-[0.35em]">
               Real Estate Opportunities
             </p>
-            <h1 className="mt-4 font-display text-4xl font-bold leading-tight text-white text-balance sm:text-5xl">
+            <h1 className="mt-5 font-display text-4xl font-bold leading-tight text-white text-balance sm:text-5xl md:text-6xl md:leading-[1.08]">
               Distressed Properties.
               <br />
               Real Solutions.
             </h1>
-            <p className="mt-6 max-w-lg font-display text-lg font-semibold text-amber-200 sm:text-xl">
+            <p className="mt-6 max-w-xl font-display text-lg font-semibold text-amber-200 sm:text-xl md:text-2xl">
               We Buy Houses for Cash — As-Is, On a Timeline We Schedule Together
             </p>
-            <p className="mt-3 max-w-lg text-base text-white/85 sm:text-lg">
+            <p className="mt-4 max-w-xl text-base text-white/85 sm:text-lg md:leading-relaxed">
               We buy houses for cash, as-is, with no need for repairs or renovations, and we
               close according to a timeline we schedule together with you.
             </p>
-            <p className="mt-4 max-w-lg text-base text-white/85 sm:text-lg">
+            <p className="mt-4 max-w-xl text-base text-white/85 sm:text-lg md:leading-relaxed">
               At DERAX REAL ESTATE LLC, we turn the challenges of selling a distressed property
               into a simple and convenient process. No repairs, no complicated process, and no
               need to wait for a traditional buyer.
             </p>
-            <p className="mt-4 max-w-lg text-base text-white/85 sm:text-lg">
+            <p className="mt-4 max-w-xl text-base text-white/85 sm:text-lg md:leading-relaxed">
               Our goal is to make selling your property simple, straightforward, and convenient
               from start to finish.
             </p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row md:mt-10">
               <ButtonLink
                 href="/sell-your-property"
                 className="transition hover:brightness-110 active:brightness-95"
