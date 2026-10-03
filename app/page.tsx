@@ -105,17 +105,15 @@ export default async function HomePage() {
             <div
               className="mt-5 inline-block rounded-[22px] px-7 py-5 shadow-[0_25px_45px_-15px_rgba(0,0,0,0.6)] sm:px-9 sm:py-6"
               style={{
-                background: "linear-gradient(180deg, #ead9b3 0%, #cdab74 100%)",
-                border: "1px solid rgba(122,90,31,0.4)",
+                background: "linear-gradient(180deg, #ef4444 0%, #b91c1c 100%)",
+                border: "1px solid rgba(127,29,29,0.5)",
               }}
             >
               <h1
-                className="font-typewriter text-3xl uppercase leading-[1.25] text-black text-balance sm:text-4xl md:text-5xl"
+                className="font-typewriter text-3xl uppercase leading-[1.25] text-white text-balance sm:text-4xl md:text-5xl"
                 style={{
-                  fontWeight: 700,
-                  WebkitTextStroke: "0.8px #000",
-                  textShadow:
-                    "1px 1px 0 #bfe3ff, 2px 2px 0 #8ecbf0, 3px 3px 0 #5aa8dc, 4px 4px 8px rgba(0,0,0,0.3)",
+                  fontWeight: 900,
+                  WebkitTextStroke: "1.6px #1e3a8a",
                 }}
               >
                 <span className="hero-title-word hero-title-w1">Distressed</span>{" "}
