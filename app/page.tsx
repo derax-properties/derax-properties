@@ -151,24 +151,17 @@ export default async function HomePage() {
           Brighter Futures.
         </p>
 
-        {/* Desktop: diagonal navy panel on the right, orange edge accent */}
+        {/* Desktop: navy panel on the right, orange edge accent */}
         <div
-          className="absolute inset-y-0 right-0 z-10 hidden w-[56%] lg:block"
-          style={{
-            background: "linear-gradient(90deg, #f0a868 0%, #c9701f 100%)",
-            clipPath: "polygon(15% 0, 100% 0, 100% 100%, 0% 100%)",
-          }}
-          aria-hidden
-        />
-        <div
-          className="absolute inset-y-0 right-0 z-10 hidden w-[55%] lg:block"
+          className="absolute inset-y-8 right-6 z-10 hidden w-[52%] rounded-[32px] lg:block"
           style={{
             background: "linear-gradient(135deg, #22344a 0%, #141f2b 100%)",
-            clipPath: "polygon(17% 0, 100% 0, 100% 100%, 0% 100%)",
+            boxShadow:
+              "0 25px 60px -15px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08), 0 0 0 2px #c9701f",
           }}
           aria-hidden
         />
-        <div className="absolute inset-y-0 right-0 z-20 hidden w-[55%] flex-col justify-center px-12 py-16 lg:flex xl:px-16">
+        <div className="absolute inset-y-8 right-6 z-20 hidden w-[52%] flex-col justify-center px-12 py-16 lg:flex xl:px-16">
           {heroEyebrow}
           {heroTitle}
           {heroBullets}
