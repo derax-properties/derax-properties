@@ -132,7 +132,10 @@ export default async function HomePage() {
           </div>
         </div>
 
-        <p className="font-hand absolute right-4 top-4 z-30 rounded-xl border border-amber-400/30 bg-[#110a05]/50 px-3 py-2 text-xl leading-tight text-amber-200 backdrop-blur-md sm:right-8 sm:top-8 sm:text-2xl">
+        {/* On phones this sits below the top-left logo row instead of beside it, so the
+            two never compete for the same narrow row; from sm up it returns to the
+            original top-right position alongside the logo. */}
+        <p className="font-hand absolute right-4 top-16 z-30 rounded-xl border border-amber-400/30 bg-[#110a05]/50 px-3 py-2 text-base leading-tight text-amber-200 backdrop-blur-md sm:right-8 sm:top-8 sm:text-2xl">
           Better Deals.
           <br />
           Brighter Futures.
