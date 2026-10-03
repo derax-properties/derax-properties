@@ -57,6 +57,20 @@ const SERVICES = [
   },
 ];
 
+const heroCaptionStyle: React.CSSProperties = {
+  background: "linear-gradient(180deg, #2a2a2a 0%, #0a0a0a 55%, #000000 100%)",
+  boxShadow:
+    "inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -4px 8px rgba(0,0,0,0.65), 0 14px 24px -10px rgba(0,0,0,0.75), 0 2px 0 #000",
+  border: "1px solid rgba(255,255,255,0.08)",
+  borderRadius: "6px",
+  boxDecorationBreak: "clone",
+  WebkitBoxDecorationBreak: "clone",
+  letterSpacing: "0.03em",
+  wordSpacing: "0.3em",
+  lineHeight: 1.9,
+  padding: "0.25em 0.5em",
+};
+
 export default async function HomePage() {
   const properties = await getFeaturedProperties();
 
@@ -113,32 +127,37 @@ export default async function HomePage() {
               </h1>
             </div>
 
-            <div
-              className="mt-6 inline-block max-w-xl rounded-2xl border border-[rgba(173,216,255,0.3)] px-6 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.18),inset_0_-5px_12px_rgba(0,0,0,0.4),0_16px_32px_-10px_rgba(0,0,0,0.55),0_2px_0_#081426]"
-              style={{ background: "linear-gradient(180deg, #274b7a 0%, #16305a 55%, #0b1b36 100%)" }}
-            >
-              <p className="font-condensed text-lg font-semibold tracking-wide text-[#fde047] sm:text-xl">
+            <div className="mt-6 max-w-xl bg-transparent">
+              <p
+                className="font-condensed inline text-lg font-bold text-white sm:text-xl"
+                style={heroCaptionStyle}
+              >
                 We Buy Houses for Cash — As-Is, On a Timeline We Schedule Together
               </p>
             </div>
 
-            <div
-              className="mt-6 max-w-xl space-y-3 rounded-2xl border px-6 py-5 shadow-[0_16px_32px_-12px_rgba(0,0,0,0.6)]"
-              style={{
-                background: "linear-gradient(180deg, #1c3a63 0%, #0b1b36 100%)",
-                borderColor: "rgba(173,216,255,0.3)",
-              }}
-            >
-              <p className="font-condensed text-base text-[#fde047] sm:text-lg md:leading-relaxed">
+            <div className="mt-6 max-w-xl space-y-3 bg-transparent">
+              <p
+                className="font-condensed inline text-base font-bold text-white sm:text-lg"
+                style={heroCaptionStyle}
+              >
                 We buy houses for cash, as-is, with no need for repairs or renovations, and we
                 close according to a timeline we schedule together with you.
               </p>
-              <p className="font-condensed text-base text-[#fde047] sm:text-lg md:leading-relaxed">
+              <br />
+              <p
+                className="font-condensed inline text-base font-bold text-white sm:text-lg"
+                style={heroCaptionStyle}
+              >
                 At DERAX REAL ESTATE LLC, we turn the challenges of selling a distressed property
                 into a simple and convenient process. No repairs, no complicated process, and no
                 need to wait for a traditional buyer.
               </p>
-              <p className="font-condensed text-base text-[#fde047] sm:text-lg md:leading-relaxed">
+              <br />
+              <p
+                className="font-condensed inline text-base font-bold text-white sm:text-lg"
+                style={heroCaptionStyle}
+              >
                 Our goal is to make selling your property simple, straightforward, and convenient
                 from start to finish.
               </p>
