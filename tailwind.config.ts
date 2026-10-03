@@ -32,6 +32,8 @@ const config: Config = {
         display: ["var(--font-playfair)", "Georgia", "serif"],
         body: ["var(--font-inter)", "system-ui", "sans-serif"],
         hand: ["var(--font-caveat)", "cursive"],
+        retro: ["var(--font-lobster)", "cursive"],
+        condensed: ["var(--font-oswald)", "sans-serif"],
       },
       maxWidth: {
         content: "1280px",

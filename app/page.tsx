@@ -87,24 +87,40 @@ export default async function HomePage() {
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-amber-300 sm:text-sm sm:tracking-[0.35em]">
               Real Estate Opportunities
             </p>
-            <h1 className="mt-5 font-display text-4xl font-bold leading-tight text-white text-balance sm:text-5xl md:text-6xl md:leading-[1.08]">
-              Distressed Properties.
-              <br />
-              Real Solutions.
-            </h1>
-            <p className="mt-6 max-w-xl font-display text-lg font-semibold text-amber-200 sm:text-xl md:text-2xl">
-              We Buy Houses for Cash — As-Is, On a Timeline We Schedule Together
-            </p>
-            <p className="mt-4 max-w-xl text-base text-white/85 sm:text-lg md:leading-relaxed">
+
+            <div className="mt-5 inline-block rounded-[22px] bg-[#fbf3e4] px-7 py-5 shadow-[0_25px_45px_-15px_rgba(0,0,0,0.55)] sm:px-9 sm:py-6">
+              <h1
+                className="font-retro text-4xl italic leading-[1.05] text-[#f3ddc5] text-balance sm:text-5xl md:text-[3.4rem]"
+                style={{
+                  WebkitTextStroke: "1.5px #163a30",
+                  textShadow:
+                    "3px 4px 0 #163a30, 6px 8px 0 #c99a2e, 9px 11px 0 #df8569, 11px 14px 14px rgba(0,0,0,0.3)",
+                }}
+              >
+                Distressed Properties
+                <span className="mt-1 block text-[0.66em]">Real Solutions.</span>
+              </h1>
+            </div>
+
+            <div
+              className="mt-6 inline-block max-w-xl rounded-2xl border border-[rgba(173,216,255,0.3)] px-6 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.18),inset_0_-5px_12px_rgba(0,0,0,0.4),0_16px_32px_-10px_rgba(0,0,0,0.55),0_2px_0_#081426]"
+              style={{ background: "linear-gradient(180deg, #274b7a 0%, #16305a 55%, #0b1b36 100%)" }}
+            >
+              <p className="font-condensed text-lg font-semibold tracking-wide text-[#cfe8ff] sm:text-xl">
+                We Buy Houses for Cash — As-Is, On a Timeline We Schedule Together
+              </p>
+            </div>
+
+            <p className="font-condensed mt-4 max-w-xl text-base text-white/85 sm:text-lg md:leading-relaxed">
               We buy houses for cash, as-is, with no need for repairs or renovations, and we
               close according to a timeline we schedule together with you.
             </p>
-            <p className="mt-4 max-w-xl text-base text-white/85 sm:text-lg md:leading-relaxed">
+            <p className="font-condensed mt-4 max-w-xl text-base text-white/85 sm:text-lg md:leading-relaxed">
               At DERAX REAL ESTATE LLC, we turn the challenges of selling a distressed property
               into a simple and convenient process. No repairs, no complicated process, and no
               need to wait for a traditional buyer.
             </p>
-            <p className="mt-4 max-w-xl text-base text-white/85 sm:text-lg md:leading-relaxed">
+            <p className="font-condensed mt-4 max-w-xl text-base text-white/85 sm:text-lg md:leading-relaxed">
               Our goal is to make selling your property simple, straightforward, and convenient
               from start to finish.
             </p>

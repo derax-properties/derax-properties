@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Playfair_Display, Inter, Caveat } from "next/font/google";
+import { Playfair_Display, Inter, Caveat, Lobster, Oswald } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -20,6 +20,20 @@ const caveat = Caveat({
   subsets: ["latin"],
   weight: ["500", "600", "700"],
   variable: "--font-caveat",
+  display: "swap",
+});
+
+const lobster = Lobster({
+  subsets: ["latin"],
+  weight: ["400"],
+  variable: "--font-lobster",
+  display: "swap",
+});
+
+const oswald = Oswald({
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
+  variable: "--font-oswald",
   display: "swap",
 });
 
@@ -59,7 +73,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${playfair.variable} ${inter.variable} ${caveat.variable}`}>
+    <html
+      lang="en"
+      className={`${playfair.variable} ${inter.variable} ${caveat.variable} ${lobster.variable} ${oswald.variable}`}
+    >
       <body className="font-body text-ink antialiased bg-cream-soft">
         <a
           href="#main-content"
