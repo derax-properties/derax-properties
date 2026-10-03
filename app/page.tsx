@@ -143,7 +143,7 @@ export default async function HomePage() {
           className="absolute inset-y-0 right-0 z-10 hidden w-[56%] lg:block"
           style={{
             background: "linear-gradient(90deg, #f0a868 0%, #c9701f 100%)",
-            clipPath: "polygon(15% 0, 100% 0, 100% 100%, 0% 100%, 0% 30%)",
+            clipPath: "polygon(15% 0, 100% 0, 100% 100%, 0% 100%)",
           }}
           aria-hidden
         />
@@ -151,7 +151,7 @@ export default async function HomePage() {
           className="absolute inset-y-0 right-0 z-10 hidden w-[55%] lg:block"
           style={{
             background: "linear-gradient(135deg, #22344a 0%, #141f2b 100%)",
-            clipPath: "polygon(17% 0, 100% 0, 100% 100%, 0% 100%, 0% 30%)",
+            clipPath: "polygon(17% 0, 100% 0, 100% 100%, 0% 100%)",
           }}
           aria-hidden
         />
