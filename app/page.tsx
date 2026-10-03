@@ -112,7 +112,7 @@ export default async function HomePage() {
               className="mt-6 inline-block max-w-xl rounded-2xl border border-[rgba(173,216,255,0.3)] px-6 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.18),inset_0_-5px_12px_rgba(0,0,0,0.4),0_16px_32px_-10px_rgba(0,0,0,0.55),0_2px_0_#081426]"
               style={{ background: "linear-gradient(180deg, #274b7a 0%, #16305a 55%, #0b1b36 100%)" }}
             >
-              <p className="font-condensed text-lg font-semibold tracking-wide text-[#cfe8ff] sm:text-xl">
+              <p className="font-condensed text-lg font-semibold tracking-wide text-[#fde047] sm:text-xl">
                 We Buy Houses for Cash — As-Is, On a Timeline We Schedule Together
               </p>
             </div>
