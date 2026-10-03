@@ -88,9 +88,15 @@ export default async function HomePage() {
               Real Estate Opportunities
             </p>
 
-            <div className="mt-5 inline-block rounded-[22px] bg-[#fbf3e4] px-7 py-5 shadow-[0_25px_45px_-15px_rgba(0,0,0,0.55)] sm:px-9 sm:py-6">
+            <div
+              className="mt-5 inline-block rounded-[22px] px-7 py-5 shadow-[0_25px_45px_-15px_rgba(0,0,0,0.6)] sm:px-9 sm:py-6"
+              style={{
+                background: "linear-gradient(180deg, #1d4536 0%, #123024 100%)",
+                border: "1px solid rgba(201,162,75,0.4)",
+              }}
+            >
               <h1
-                className="font-retro text-4xl italic leading-[1.05] text-[#f3ddc5] text-balance sm:text-5xl md:text-[3.4rem]"
+                className="font-retro text-4xl italic leading-[1.05] text-[#fbf0dc] text-balance sm:text-5xl md:text-[3.4rem]"
                 style={{
                   WebkitTextStroke: "1.5px #163a30",
                   textShadow:
