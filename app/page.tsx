@@ -70,13 +70,13 @@ export default async function HomePage() {
   const properties = await getFeaturedProperties();
 
   const heroEyebrow = (
-    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-orange-300 sm:text-sm sm:tracking-[0.35em]">
+    <p className="text-center text-xs font-semibold uppercase tracking-[0.3em] text-orange-300 sm:text-sm sm:tracking-[0.35em]">
       Real Estate Opportunities
     </p>
   );
 
   const heroTitle = (
-    <h1 className="font-typewriter mt-3 text-3xl uppercase leading-[1.2] text-white text-balance sm:text-4xl xl:text-[2.75rem]">
+    <h1 className="font-typewriter mt-3 text-center text-3xl uppercase leading-[1.2] text-white text-balance sm:text-4xl xl:text-[2.75rem]">
       <span className="hero-title-word hero-title-w1">Distressed</span>{" "}
       <span className="hero-title-word hero-title-w2">Properties</span>
       <span className="block text-orange-300">
@@ -87,28 +87,15 @@ export default async function HomePage() {
   );
 
   const heroBullets = (
-    <ul className="mt-6 max-w-xl space-y-3">
-      <li className="flex items-start gap-3 text-sm font-semibold text-white sm:text-base">
-        <span className="mt-[7px] h-2 w-2 shrink-0 rounded-full bg-orange-300" aria-hidden />
-        We buy houses for cash, as-is, with no need for repairs or renovations, and we close
-        according to a timeline we schedule together with you.
-      </li>
-      <li className="flex items-start gap-3 text-sm font-semibold text-white sm:text-base">
-        <span className="mt-[7px] h-2 w-2 shrink-0 rounded-full bg-orange-300" aria-hidden />
-        At DERAX REAL ESTATE LLC, we turn the challenges of selling a distressed property into a
-        simple and convenient process — no repairs, no complicated process, and no need to wait
-        for a traditional buyer.
-      </li>
-      <li className="flex items-start gap-3 text-sm font-semibold text-white sm:text-base">
-        <span className="mt-[7px] h-2 w-2 shrink-0 rounded-full bg-orange-300" aria-hidden />
-        Our goal is to make selling your property simple, straightforward, and convenient from
-        start to finish.
-      </li>
+    <ul className="mx-auto mt-6 flex max-w-sm flex-col items-center gap-2.5">
+      <li className="text-sm font-semibold text-white sm:text-base">Sell your house fast, as-is</li>
+      <li className="text-sm font-semibold text-white sm:text-base">Get a fair cash offer</li>
+      <li className="text-sm font-semibold text-white sm:text-base">Close on your own timeline</li>
     </ul>
   );
 
   const heroButtons = (
-    <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+    <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
       <ButtonLink
         href="/sell-your-property"
         className="transition hover:brightness-110 active:brightness-95"
@@ -168,7 +155,7 @@ export default async function HomePage() {
           }}
           aria-hidden
         />
-        <div className="absolute inset-y-0 right-0 z-20 hidden w-[55%] flex-col justify-center px-12 py-16 lg:flex xl:px-16">
+        <div className="absolute inset-y-0 right-0 z-20 hidden w-[55%] flex-col items-center justify-center px-12 py-10 lg:flex xl:px-16">
           {heroEyebrow}
           {heroTitle}
           {heroBullets}
@@ -178,7 +165,7 @@ export default async function HomePage() {
         {/* Mobile / tablet: single stacked navy card, same colors, no diagonal cut */}
         <div className="relative z-10 mx-auto w-full max-w-content px-4 py-16 sm:px-6 sm:py-20 lg:hidden">
           <div
-            className="max-w-3xl rounded-[20px] border border-orange-400/25 p-8 shadow-2xl backdrop-blur-md backdrop-saturate-150 sm:p-10"
+            className="mx-auto flex max-w-xl flex-col items-center rounded-[20px] border border-orange-400/25 p-8 text-center shadow-2xl backdrop-blur-md backdrop-saturate-150 sm:p-10"
             style={{ background: "linear-gradient(135deg, rgba(34,52,74,0.9) 0%, rgba(20,31,43,0.92) 100%)" }}
           >
             {heroEyebrow}
