@@ -5,10 +5,10 @@ import Image from "next/image";
 import { cx } from "@/lib/utils";
 
 /**
- * Full-bleed, auto-playing photo slideshow for the homepage hero: a
- * distressed property, a sold sign, a renovated flip, and a buyer/seller
- * shaking hands over a signed contract, crossfading behind the hero copy.
- * Starts automatically (no button needed) and needs no interaction.
+ * Full-bleed, auto-playing photo slideshow for the homepage hero: real
+ * 4K distressed-property photos (abandoned exteriors, renovations in
+ * progress, outdated kitchens) crossfading behind the hero copy. Starts
+ * automatically (no button needed) and needs no interaction.
  *
  * Timing, as requested: advances every 4s, plays for about a minute and a
  * half, then holds on the current photo for a couple of minutes before
@@ -23,11 +23,13 @@ import { cx } from "@/lib/utils";
  * matter which slide is up.
  */
 const SLIDES = [
-  { src: "/images/hero/distressed-house.jpg", alt: "A distressed, run-down property before renovation" },
-  { src: "/images/hero/sold-sign.jpg", alt: "A \"Sold\" sign in front of a home" },
-  { src: "/images/hero/renovated-house.jpg", alt: "A beautifully renovated home" },
-  { src: "/images/hero/handshake-contract.jpg", alt: "A buyer and seller shaking hands over a signed agreement" },
-  { src: "/images/hero/contract-signing.jpg", alt: "Signing a purchase contract" },
+  { src: "/images/hero/abandoned-brick-house-1.jpg", alt: "A distressed, abandoned brick property before renovation" },
+  { src: "/images/hero/abandoned-white-farmhouse.jpg", alt: "A distressed, abandoned farmhouse with boarded and broken windows" },
+  { src: "/images/hero/outdated-kitchen-wood-paneled.jpg", alt: "An outdated, dated kitchen and dining area in need of renovation" },
+  { src: "/images/hero/renovation-in-progress-1.jpg", alt: "A property mid-renovation with exposed brick and tools" },
+  { src: "/images/hero/abandoned-brick-house-2.jpg", alt: "A distressed, abandoned brick property, different angle" },
+  { src: "/images/hero/renovation-in-progress-2.jpg", alt: "A property mid-renovation with an opened wall and ladder" },
+  { src: "/images/hero/outdated-kitchen-tile.jpg", alt: "An outdated kitchen with worn cabinets and tile backsplash" },
 ];
 
 const SLIDE_INTERVAL_MS = 4000;

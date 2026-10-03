@@ -57,22 +57,74 @@ const SERVICES = [
   },
 ];
 
-const heroCaptionStyle: React.CSSProperties = {
-  background: "linear-gradient(180deg, #2a2a2a 0%, #0a0a0a 55%, #000000 100%)",
+/** Orange "3D" gradient button style matching the new navy/orange hero. */
+const ORANGE_3D_STYLE: React.CSSProperties = {
+  background: "linear-gradient(180deg, #f0a868 0%, #de7f2e 55%, #c9701f 100%)",
   boxShadow:
-    "inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -4px 8px rgba(0,0,0,0.65), 0 14px 24px -10px rgba(0,0,0,0.75), 0 2px 0 #000",
-  border: "1px solid rgba(255,255,255,0.08)",
-  borderRadius: "6px",
-  boxDecorationBreak: "clone",
-  WebkitBoxDecorationBreak: "clone",
-  letterSpacing: "0.03em",
-  wordSpacing: "0.3em",
-  lineHeight: 1.9,
-  padding: "0.25em 0.5em",
+    "inset 0 1px 0 rgba(255,255,255,0.55), inset 0 -4px 10px rgba(0,0,0,0.2), 0 14px 28px -8px rgba(124,45,18,0.6), 0 2px 0 #7c2d12",
+  border: "1px solid #7c2d12",
+  color: "#2b1206",
 };
 
 export default async function HomePage() {
   const properties = await getFeaturedProperties();
+
+  const heroEyebrow = (
+    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-orange-300 sm:text-sm sm:tracking-[0.35em]">
+      Real Estate Opportunities
+    </p>
+  );
+
+  const heroTitle = (
+    <h1 className="font-typewriter mt-3 text-3xl uppercase leading-[1.2] text-white text-balance sm:text-4xl xl:text-[2.75rem]">
+      <span className="hero-title-word hero-title-w1">Distressed</span>{" "}
+      <span className="hero-title-word hero-title-w2">Properties</span>
+      <span className="block text-orange-300">
+        <span className="hero-title-word hero-title-w3">Real</span>{" "}
+        <span className="hero-title-word hero-title-w4">Solutions.</span>
+      </span>
+    </h1>
+  );
+
+  const heroBullets = (
+    <ul className="mt-6 max-w-xl space-y-3">
+      <li className="flex items-start gap-3 text-sm font-semibold text-white sm:text-base">
+        <span className="mt-[7px] h-2 w-2 shrink-0 rounded-full bg-orange-300" aria-hidden />
+        We buy houses for cash, as-is, with no need for repairs or renovations, and we close
+        according to a timeline we schedule together with you.
+      </li>
+      <li className="flex items-start gap-3 text-sm font-semibold text-white sm:text-base">
+        <span className="mt-[7px] h-2 w-2 shrink-0 rounded-full bg-orange-300" aria-hidden />
+        At DERAX REAL ESTATE LLC, we turn the challenges of selling a distressed property into a
+        simple and convenient process — no repairs, no complicated process, and no need to wait
+        for a traditional buyer.
+      </li>
+      <li className="flex items-start gap-3 text-sm font-semibold text-white sm:text-base">
+        <span className="mt-[7px] h-2 w-2 shrink-0 rounded-full bg-orange-300" aria-hidden />
+        Our goal is to make selling your property simple, straightforward, and convenient from
+        start to finish.
+      </li>
+    </ul>
+  );
+
+  const heroButtons = (
+    <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+      <ButtonLink
+        href="/sell-your-property"
+        className="transition hover:brightness-110 active:brightness-95"
+        style={ORANGE_3D_STYLE}
+      >
+        Submit Your Property →
+      </ButtonLink>
+      <ButtonLink
+        href="/properties"
+        variant="outline"
+        className="!border-white/50 !bg-white/10 !text-white hover:!bg-white/20"
+      >
+        View Properties
+      </ButtonLink>
+    </div>
+  );
 
   return (
     <>
@@ -80,108 +132,59 @@ export default async function HomePage() {
       <section className="relative isolate flex min-h-screen items-center overflow-hidden">
         <HeroSlideshow showDots />
 
-        <p className="font-hand absolute right-4 top-4 z-10 rounded-xl border border-amber-400/30 bg-[#110a05]/50 px-3 py-2 text-xl leading-tight text-amber-200 backdrop-blur-md sm:right-8 sm:top-8 sm:text-2xl">
+        {/* Top-left brand mark, overlaid on the hero photo (matches the approved mockup) */}
+        <div className="absolute left-4 top-4 z-30 flex items-center gap-3 sm:left-8 sm:top-8">
+          <DeraxMark className="h-11 w-11 shrink-0 drop-shadow-md sm:h-12 sm:w-12" />
+          <div className="flex flex-col leading-tight">
+            <span className="font-display text-base font-bold tracking-wide text-white drop-shadow-md sm:text-lg">
+              DERAX REAL ESTATE LLC
+            </span>
+            <span className="text-[10px] font-semibold tracking-[0.3em] text-orange-300 drop-shadow-md">
+              LLC
+            </span>
+          </div>
+        </div>
+
+        <p className="font-hand absolute right-4 top-4 z-30 rounded-xl border border-amber-400/30 bg-[#110a05]/50 px-3 py-2 text-xl leading-tight text-amber-200 backdrop-blur-md sm:right-8 sm:top-8 sm:text-2xl">
           Better Deals.
           <br />
           Brighter Futures.
         </p>
 
-        <div className="absolute left-[64%] top-1/2 z-10 hidden w-[26rem] -translate-y-1/2 flex-col items-center rounded-2xl border border-amber-300/40 bg-[#110a05]/60 px-10 py-12 text-center shadow-2xl backdrop-blur-md xl:flex">
-          <DeraxMark className="h-28 w-28" />
-          <p className="mt-6 font-display text-2xl font-bold leading-snug text-white tracking-wide">
-            DERAX REAL ESTATE LLC
-          </p>
-          <p className="mt-3 text-lg font-semibold tracking-wide text-amber-200/90">
-            The Partner for Convenience
-          </p>
+        {/* Desktop: diagonal navy panel on the right, orange edge accent */}
+        <div
+          className="absolute inset-y-0 right-0 z-10 hidden w-[56%] lg:block"
+          style={{
+            background: "linear-gradient(90deg, #f0a868 0%, #c9701f 100%)",
+            clipPath: "polygon(15% 0, 100% 0, 100% 100%, 0% 100%)",
+          }}
+          aria-hidden
+        />
+        <div
+          className="absolute inset-y-0 right-0 z-10 hidden w-[55%] lg:block"
+          style={{
+            background: "linear-gradient(135deg, #22344a 0%, #141f2b 100%)",
+            clipPath: "polygon(17% 0, 100% 0, 100% 100%, 0% 100%)",
+          }}
+          aria-hidden
+        />
+        <div className="absolute inset-y-0 right-0 z-20 hidden w-[55%] flex-col justify-center px-12 py-16 lg:flex xl:px-16">
+          {heroEyebrow}
+          {heroTitle}
+          {heroBullets}
+          {heroButtons}
         </div>
 
-        <div className="relative z-10 mx-auto w-full max-w-content px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
-          <div className="max-w-3xl rounded-[20px] border border-amber-400/25 bg-[#110a05]/65 p-8 shadow-2xl backdrop-blur-md backdrop-saturate-150 sm:p-10 md:p-14">
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-amber-300 sm:text-sm sm:tracking-[0.35em]">
-              Real Estate Opportunities
-            </p>
-
-            <div
-              className="mt-5 inline-block rounded-[22px] px-7 py-5 shadow-[0_25px_45px_-15px_rgba(0,0,0,0.6)] sm:px-9 sm:py-6"
-              style={{
-                background: "linear-gradient(180deg, #ef4444 0%, #b91c1c 100%)",
-                border: "1px solid rgba(127,29,29,0.5)",
-              }}
-            >
-              <h1
-                className="font-typewriter text-3xl uppercase leading-[1.25] text-white text-balance sm:text-4xl md:text-5xl"
-                style={{
-                  fontWeight: 900,
-                  WebkitTextStroke: "1.6px #1e3a8a",
-                }}
-              >
-                <span className="hero-title-word hero-title-w1">Distressed</span>{" "}
-                <span className="hero-title-word hero-title-w2">Properties</span>
-                <span className="block">
-                  <span className="hero-title-word hero-title-w3">Real</span>{" "}
-                  <span className="hero-title-word hero-title-w4">Solutions.</span>
-                </span>
-              </h1>
-            </div>
-
-            <div className="mt-6 max-w-xl bg-transparent">
-              <p
-                className="font-condensed inline text-lg font-bold text-white sm:text-xl"
-                style={heroCaptionStyle}
-              >
-                We Buy Houses for Cash — As-Is, On a Timeline We Schedule Together
-              </p>
-            </div>
-
-            <div className="mt-6 max-w-xl space-y-3 bg-transparent">
-              <p
-                className="font-condensed inline text-base font-bold text-white sm:text-lg"
-                style={heroCaptionStyle}
-              >
-                We buy houses for cash, as-is, with no need for repairs or renovations, and we
-                close according to a timeline we schedule together with you.
-              </p>
-              <br />
-              <p
-                className="font-condensed inline text-base font-bold text-white sm:text-lg"
-                style={heroCaptionStyle}
-              >
-                At DERAX REAL ESTATE LLC, we turn the challenges of selling a distressed property
-                into a simple and convenient process. No repairs, no complicated process, and no
-                need to wait for a traditional buyer.
-              </p>
-              <br />
-              <p
-                className="font-condensed inline text-base font-bold text-white sm:text-lg"
-                style={heroCaptionStyle}
-              >
-                Our goal is to make selling your property simple, straightforward, and convenient
-                from start to finish.
-              </p>
-            </div>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row md:mt-10">
-              <ButtonLink
-                href="/sell-your-property"
-                className="transition hover:brightness-110 active:brightness-95"
-                style={{
-                  background: "linear-gradient(180deg, #fdba74 0%, #f97316 55%, #c2410c 100%)",
-                  boxShadow:
-                    "inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -4px 10px rgba(0,0,0,0.2), 0 14px 28px -8px rgba(154,52,18,0.6), 0 2px 0 #9a3412",
-                  border: "1px solid #9a3412",
-                  color: "#431407",
-                }}
-              >
-                Submit Your Property →
-              </ButtonLink>
-              <ButtonLink
-                href="/properties"
-                variant="outline"
-                className="!border-white/50 !bg-white/10 !text-white hover:!bg-white/20"
-              >
-                View Properties
-              </ButtonLink>
-            </div>
+        {/* Mobile / tablet: single stacked navy card, same colors, no diagonal cut */}
+        <div className="relative z-10 mx-auto w-full max-w-content px-4 py-16 sm:px-6 sm:py-20 lg:hidden">
+          <div
+            className="max-w-3xl rounded-[20px] border border-orange-400/25 p-8 shadow-2xl backdrop-blur-md backdrop-saturate-150 sm:p-10"
+            style={{ background: "linear-gradient(135deg, rgba(34,52,74,0.9) 0%, rgba(20,31,43,0.92) 100%)" }}
+          >
+            {heroEyebrow}
+            {heroTitle}
+            {heroBullets}
+            {heroButtons}
           </div>
         </div>
       </section>
