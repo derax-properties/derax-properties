@@ -10,12 +10,12 @@ import { cx } from "@/lib/utils";
  * progress, outdated kitchens) crossfading behind the hero copy. Starts
  * automatically (no button needed) and needs no interaction.
  *
- * Timing, as requested: advances every 4s, plays for about a minute and a
- * half, then holds on the current photo for a couple of minutes before
- * starting its cycle again — so a visitor who lingers on the page still
- * sees it move again later, but it isn't animating forever in the
- * background. Adjust SLIDE_INTERVAL_MS / PLAY_DURATION_MS / PAUSE_DURATION_MS
- * below to retune.
+ * Timing, as requested: advances every 6s with a slow, smooth 2.2s crossfade
+ * (not an abrupt cut), plays for about a minute and a half, then holds on
+ * the current photo for a couple of minutes before starting its cycle again
+ * — so a visitor who lingers on the page still sees it move again later,
+ * but it isn't animating forever in the background. Adjust
+ * SLIDE_INTERVAL_MS / PLAY_DURATION_MS / PAUSE_DURATION_MS below to retune.
  *
  * The photos are shown at full brightness/color (no dark veil) — the hero
  * copy sits in its own frosted-glass panel (see app/page.tsx) rather than
@@ -32,7 +32,7 @@ const SLIDES = [
   { src: "/images/hero/outdated-kitchen-tile.jpg", alt: "An outdated kitchen with worn cabinets and tile backsplash" },
 ];
 
-const SLIDE_INTERVAL_MS = 4000;
+const SLIDE_INTERVAL_MS = 6000;
 const PLAY_DURATION_MS = 90_000;
 const PAUSE_DURATION_MS = 150_000;
 
@@ -84,7 +84,7 @@ export function HeroSlideshow({
           sizes="100vw"
           priority={i === 0}
           className={cx(
-            "object-cover transition-opacity duration-1000 ease-in-out",
+            "object-cover transition-opacity ease-in-out [transition-duration:2200ms]",
             i === index ? "opacity-100" : "opacity-0"
           )}
         />
