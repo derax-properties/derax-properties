@@ -91,20 +91,25 @@ export default async function HomePage() {
             <div
               className="mt-5 inline-block rounded-[22px] px-7 py-5 shadow-[0_25px_45px_-15px_rgba(0,0,0,0.6)] sm:px-9 sm:py-6"
               style={{
-                background: "linear-gradient(180deg, #1d4536 0%, #123024 100%)",
-                border: "1px solid rgba(201,162,75,0.4)",
+                background: "linear-gradient(180deg, #ead9b3 0%, #cdab74 100%)",
+                border: "1px solid rgba(122,90,31,0.4)",
               }}
             >
               <h1
-                className="font-retro text-4xl italic leading-[1.05] text-[#fbf0dc] text-balance sm:text-5xl md:text-[3.4rem]"
+                className="font-typewriter text-3xl uppercase leading-[1.25] text-black text-balance sm:text-4xl md:text-5xl"
                 style={{
-                  WebkitTextStroke: "1.5px #163a30",
+                  fontWeight: 700,
+                  WebkitTextStroke: "0.8px #000",
                   textShadow:
-                    "3px 4px 0 #163a30, 6px 8px 0 #c99a2e, 9px 11px 0 #df8569, 11px 14px 14px rgba(0,0,0,0.3)",
+                    "1px 1px 0 #bfe3ff, 2px 2px 0 #8ecbf0, 3px 3px 0 #5aa8dc, 4px 4px 8px rgba(0,0,0,0.3)",
                 }}
               >
-                Distressed Properties
-                <span className="mt-1 block text-[0.66em]">Real Solutions.</span>
+                <span className="hero-title-word hero-title-w1">Distressed</span>{" "}
+                <span className="hero-title-word hero-title-w2">Properties</span>
+                <span className="block">
+                  <span className="hero-title-word hero-title-w3">Real</span>{" "}
+                  <span className="hero-title-word hero-title-w4">Solutions.</span>
+                </span>
               </h1>
             </div>
 
@@ -117,19 +122,27 @@ export default async function HomePage() {
               </p>
             </div>
 
-            <p className="font-condensed mt-4 max-w-xl text-base text-white/85 sm:text-lg md:leading-relaxed">
-              We buy houses for cash, as-is, with no need for repairs or renovations, and we
-              close according to a timeline we schedule together with you.
-            </p>
-            <p className="font-condensed mt-4 max-w-xl text-base text-white/85 sm:text-lg md:leading-relaxed">
-              At DERAX REAL ESTATE LLC, we turn the challenges of selling a distressed property
-              into a simple and convenient process. No repairs, no complicated process, and no
-              need to wait for a traditional buyer.
-            </p>
-            <p className="font-condensed mt-4 max-w-xl text-base text-white/85 sm:text-lg md:leading-relaxed">
-              Our goal is to make selling your property simple, straightforward, and convenient
-              from start to finish.
-            </p>
+            <div
+              className="mt-6 max-w-xl space-y-3 rounded-2xl border px-6 py-5 shadow-[0_16px_32px_-12px_rgba(0,0,0,0.6)]"
+              style={{
+                background: "linear-gradient(180deg, #1c3a63 0%, #0b1b36 100%)",
+                borderColor: "rgba(173,216,255,0.3)",
+              }}
+            >
+              <p className="font-condensed text-base text-[#fde047] sm:text-lg md:leading-relaxed">
+                We buy houses for cash, as-is, with no need for repairs or renovations, and we
+                close according to a timeline we schedule together with you.
+              </p>
+              <p className="font-condensed text-base text-[#fde047] sm:text-lg md:leading-relaxed">
+                At DERAX REAL ESTATE LLC, we turn the challenges of selling a distressed property
+                into a simple and convenient process. No repairs, no complicated process, and no
+                need to wait for a traditional buyer.
+              </p>
+              <p className="font-condensed text-base text-[#fde047] sm:text-lg md:leading-relaxed">
+                Our goal is to make selling your property simple, straightforward, and convenient
+                from start to finish.
+              </p>
+            </div>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row md:mt-10">
               <ButtonLink
                 href="/sell-your-property"

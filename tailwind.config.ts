@@ -34,6 +34,7 @@ const config: Config = {
         hand: ["var(--font-caveat)", "cursive"],
         retro: ["var(--font-lobster)", "cursive"],
         condensed: ["var(--font-oswald)", "sans-serif"],
+        typewriter: ["var(--font-special-elite)", "Courier New", "monospace"],
       },
       maxWidth: {
         content: "1280px",
