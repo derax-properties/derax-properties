@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, type CSSProperties } from "react";
+import { useState } from "react";
 import { cx } from "@/lib/utils";
 import { DeraxMark } from "@/components/DeraxMark";
 
@@ -13,15 +13,6 @@ const NAV_LINKS = [
   { href: "/properties", label: "Properties" },
   { href: "/contact", label: "Contact" },
 ];
-
-/** Raised, beveled "3D" blue button style for the header's CTA. */
-const PURPLE_3D_STYLE: CSSProperties = {
-  background: "linear-gradient(180deg, #60a5fa 0%, #2563eb 55%, #1d4ed8 100%)",
-  boxShadow:
-    "inset 0 1px 0 rgba(255,255,255,0.55), inset 0 -4px 10px rgba(0,0,0,0.25), 0 10px 22px -8px rgba(29,78,216,0.6), 0 2px 0 #1e3a8a",
-  border: "1px solid #1e3a8a",
-  color: "#ffffff",
-};
 
 export function Header() {
   const pathname = usePathname();
@@ -72,8 +63,7 @@ export function Header() {
         <div className="hidden lg:block">
           <Link
             href="/sell-your-property"
-            style={PURPLE_3D_STYLE}
-            className="focus-gold inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition hover:brightness-110 active:brightness-95"
+            className="focus-gold inline-flex items-center gap-2 rounded-full bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
           >
             Submit Your Property
           </Link>
@@ -133,8 +123,7 @@ export function Header() {
           <Link
             href="/sell-your-property"
             onClick={() => setOpen(false)}
-            style={PURPLE_3D_STYLE}
-            className="focus-gold mt-4 flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold transition hover:brightness-110 active:brightness-95"
+            className="focus-gold mt-4 flex items-center justify-center gap-2 rounded-full bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
           >
             Submit Your Property
           </Link>

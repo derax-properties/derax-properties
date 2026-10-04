@@ -57,15 +57,6 @@ const SERVICES = [
   },
 ];
 
-/** Orange "3D" gradient button style matching the new navy/orange hero. */
-const ORANGE_3D_STYLE: React.CSSProperties = {
-  background: "linear-gradient(180deg, #f0a868 0%, #de7f2e 55%, #c9701f 100%)",
-  boxShadow:
-    "inset 0 1px 0 rgba(255,255,255,0.55), inset 0 -4px 10px rgba(0,0,0,0.2), 0 14px 28px -8px rgba(124,45,18,0.6), 0 2px 0 #7c2d12",
-  border: "1px solid #7c2d12",
-  color: "#2b1206",
-};
-
 export default async function HomePage() {
   const properties = await getFeaturedProperties();
 
@@ -98,8 +89,7 @@ export default async function HomePage() {
     <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
       <ButtonLink
         href="/sell-your-property"
-        className="transition hover:brightness-110 active:brightness-95"
-        style={ORANGE_3D_STYLE}
+        className="!bg-blue-600 !text-white transition-colors hover:!bg-blue-700"
       >
         Submit Your Property →
       </ButtonLink>

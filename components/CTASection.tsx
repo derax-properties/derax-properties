@@ -19,7 +19,10 @@ export function CTASection() {
             </p>
           </div>
         </div>
-        <ButtonLink href="/sell-your-property" className="shrink-0">
+        <ButtonLink
+          href="/sell-your-property"
+          className="shrink-0 !bg-blue-600 !text-white transition-colors hover:!bg-blue-700"
+        >
           Submit Your Property →
         </ButtonLink>
       </div>
