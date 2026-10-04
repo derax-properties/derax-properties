@@ -7,6 +7,7 @@ import { FileUpload, type StagedFile } from "@/components/FileUpload";
 import { Button } from "@/components/Button";
 import { AddressAutocomplete, type ParsedAddress } from "@/components/AddressAutocomplete";
 import { sellerSubmissionSchema } from "@/lib/validation";
+import { cx } from "@/lib/utils";
 
 const STEPS = ["Property", "Condition", "Seller", "Situation", "Photos", "Review"];
 
@@ -296,20 +297,62 @@ export function SellPropertyWizard() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      {/* Progress */}
-      <div className="mb-8">
-        <p className="text-sm font-semibold text-gold-dark">
-          Step {step + 1} of {STEPS.length} — {STEPS[step]}
-        </p>
-        <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-ink/10">
-          <div
-            className="h-full rounded-full bg-gold transition-all"
-            style={{ width: `${((step + 1) / STEPS.length) * 100}%` }}
-          />
+      <div className="overflow-hidden rounded-2xl bg-white shadow-card">
+        {/* Stepper */}
+        <div className="flex justify-between px-5 pt-6 sm:px-8">
+          {STEPS.map((label, i) => {
+            const state = i < step ? "done" : i === step ? "current" : "upcoming";
+            return (
+              <div key={label} className="relative flex flex-1 flex-col items-center gap-2">
+                {i < STEPS.length - 1 && (
+                  <div
+                    className={cx(
+                      "absolute left-1/2 top-[14px] h-0.5 w-full",
+                      state === "done" ? "bg-[#c9701f]" : "bg-ink/10"
+                    )}
+                    aria-hidden
+                  />
+                )}
+                <div
+                  className={cx(
+                    "relative z-10 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-white text-xs font-bold",
+                    state === "current" && "bg-[#de7f2e] text-white",
+                    state === "done" && "bg-[#22344a] text-white",
+                    state === "upcoming" && "bg-[#eee3d6] text-ink/40"
+                  )}
+                >
+                  {i + 1}
+                </div>
+                <span
+                  className={cx(
+                    "hidden text-center text-[10px] font-semibold tracking-wide sm:block",
+                    state === "current" ? "text-ink" : "text-ink/40"
+                  )}
+                >
+                  {label}
+                </span>
+              </div>
+            );
+          })}
         </div>
-      </div>
 
-      <div className="rounded-2xl bg-white p-6 shadow-card sm:p-8">
+        {/* Progress bar */}
+        <div className="px-5 pt-5 sm:px-8">
+          <p className="mb-2 text-xs font-semibold text-[#c9701f] sm:hidden">
+            Step {step + 1} of {STEPS.length} — {STEPS[step]}
+          </p>
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-ink/10">
+            <div
+              className="h-full rounded-full transition-all"
+              style={{
+                width: `${((step + 1) / STEPS.length) * 100}%`,
+                background: "linear-gradient(90deg, #f0a868, #c9701f)",
+              }}
+            />
+          </div>
+        </div>
+
+        <div className="p-5 sm:p-8">
         {step === 0 && (
           <div className="flex flex-col gap-5">
             <AddressAutocomplete
@@ -644,18 +687,24 @@ export function SellPropertyWizard() {
           <Button
             type="button"
             variant="outline"
+            className="!border-ink/20 !text-ink hover:!bg-ink/5"
             onClick={goBack}
             disabled={step === 0 || submitState === "creating" || submitState === "uploading"}
           >
             Back
           </Button>
           {step < STEPS.length - 1 ? (
-            <Button type="button" onClick={goNext}>
-              Continue
+            <Button
+              type="button"
+              className="!bg-blue-600 !text-white hover:!bg-blue-700"
+              onClick={goNext}
+            >
+              Continue →
             </Button>
           ) : (
             <Button
               type="button"
+              className="!bg-blue-600 !text-white hover:!bg-blue-700"
               onClick={handleSubmit}
               disabled={submitState === "creating" || submitState === "uploading"}
             >
@@ -666,6 +715,7 @@ export function SellPropertyWizard() {
                 : "Submit Property for Review →"}
             </Button>
           )}
+        </div>
         </div>
       </div>
     </div>
